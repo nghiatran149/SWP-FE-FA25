@@ -10,7 +10,9 @@ import {
   X,
   Car,
   User,
-  Bell
+  Bell,
+  UserCheck,
+  Truck
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -22,6 +24,10 @@ const Layout = ({ children }) => {
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield },
     { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone },
     { name: 'Quản lý phụ tùng', href: '/parts', icon: Settings },
+    { name: 'Quản lý khách hàng', href: '/customers', icon: User },
+    { name: 'Quản lý xe', href: '/vehicles', icon: Car },
+    { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserCheck },
+    { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck },
     { name: 'Báo cáo & Phân tích', href: '/reports', icon: BarChart3 },
   ];
 
