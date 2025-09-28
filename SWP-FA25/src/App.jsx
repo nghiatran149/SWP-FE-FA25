@@ -1,16 +1,21 @@
 import React from 'react';
+import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
-import WarrantyClaims from './pages/WarrantyClaims';
-import ServiceCampaigns from './pages/ServiceCampaigns';
-import PartManagement from './pages/PartManagement';
-import CustomerManagement from './pages/CustomerManagement';
-import VehicleManagement from './pages/VehicleManagement';
-import TechnicianManagement from './pages/TechnicianManagement';
-import SupplyChain from './pages/SupplyChain';
-import Reports from './pages/Reports';
-import './App.css';
+
+// SC (Service Center)
+import WarrantyClaims from './pages/sc/WarrantyClaims';
+import ServiceCampaigns from './pages/sc/ServiceCampaigns';
+import CustomerManagement from './pages/sc/CustomerManagement';
+import VehicleManagement from './pages/sc/VehicleManagement';
+import TechnicianManagement from './pages/sc/TechnicianManagement';
+
+// EVM (Electric Vehicle Manufacturer)
+import WarrantyApproval from './pages/evm/WarrantyApproval';
+import PartManagement from './pages/evm/PartManagement';
+import SupplyChain from './pages/evm/SupplyChain';
+import Reports from './pages/evm/Reports';
 
 function App() {
   return (
@@ -19,6 +24,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/warranty-claims" element={<WarrantyClaims />} />
+          <Route path="/warranty-approval" element={<WarrantyApproval />} />
           <Route path="/service-campaigns" element={<ServiceCampaigns />} />
           <Route path="/parts" element={<PartManagement />} />
           <Route path="/customers" element={<CustomerManagement />} />

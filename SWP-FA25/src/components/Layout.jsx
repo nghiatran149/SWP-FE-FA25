@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Shield,
+  CheckCircle,
   Megaphone,
   Settings,
   BarChart3,
@@ -23,6 +24,7 @@ const Layout = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield },
+    { name: 'Duyệt yêu cầu bảo hành', href: '/warranty-approval', icon: CheckCircle },
     { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone },
     { name: 'Quản lý phụ tùng', href: '/parts', icon: Settings },
     { name: 'Quản lý khách hàng', href: '/customers', icon: User },
