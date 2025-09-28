@@ -192,7 +192,7 @@ const Dashboard = () => {
         <div className="px-4 py-5 sm:p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Thao tác nhanh</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+            <button className="flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600">
               <Shield className="h-4 w-4 mr-2" />
               Tạo yêu cầu bảo hành
             </button>
