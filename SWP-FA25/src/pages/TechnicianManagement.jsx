@@ -169,7 +169,7 @@ const TechnicianManagement = () => {
             Theo dõi hiệu suất và phân công công việc cho kỹ thuật viên
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600">
           <Plus className="h-4 w-4 mr-2" />
           Thêm kỹ thuật viên
         </button>
@@ -377,7 +377,7 @@ const TechnicianManagement = () => {
               </div>
 
               <div className="mt-4 flex space-x-2">
-                <button className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                <button className="flex-1 inline-flex justify-center items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600">
                   <Eye className="h-4 w-4 mr-1" />
                   Xem
                 </button>

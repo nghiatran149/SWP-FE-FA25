@@ -162,7 +162,7 @@ const VehicleManagement = () => {
             Theo dõi thông tin xe và lịch sử bảo dưỡng
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600">
           <Plus className="h-4 w-4 mr-2" />
           Đăng ký xe mới
         </button>
@@ -369,10 +369,10 @@ const VehicleManagement = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">
-                    <button className="text-primary-600 hover:text-primary-900">
+                    <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
                       <Eye className="h-4 w-4" />
                     </button>
-                    <button className="text-gray-600 hover:text-gray-900">
+                    <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
                       <Edit className="h-4 w-4" />
                     </button>
                   </div>
