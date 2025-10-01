@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 
 // SC (Service Center)
 import WarrantyClaims from './pages/sc/WarrantyClaims';
+import TechnicianTasks from './pages/sc/TechnicianTasks';
 import ServiceCampaigns from './pages/sc/ServiceCampaigns';
 import CustomerManagement from './pages/sc/CustomerManagement';
 import VehicleManagement from './pages/sc/VehicleManagement';
@@ -24,6 +25,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/warranty-claims" element={<WarrantyClaims />} />
+          <Route path="/technician-tasks" element={<TechnicianTasks />} />
           <Route path="/warranty-approval" element={<WarrantyApproval />} />
           <Route path="/service-campaigns" element={<ServiceCampaigns />} />
           <Route path="/parts" element={<PartManagement />} />
