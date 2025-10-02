@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Shield,
   CheckCircle,
+  Wrench,
   Megaphone,
   Settings,
   BarChart3,
@@ -24,6 +25,7 @@ const Layout = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield },
+    { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench },
     { name: 'Duyệt yêu cầu bảo hành', href: '/warranty-approval', icon: CheckCircle },
     { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone },
     { name: 'Quản lý phụ tùng', href: '/parts', icon: Settings },
