@@ -18,6 +18,16 @@ body {
   background-color: #f8fafc;
 }
 
+/* Ẩn thanh cuộn nhưng vẫn cho phép cuộn */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 #root {
   min-height: 100vh;
 }
