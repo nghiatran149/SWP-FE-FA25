@@ -17,10 +17,22 @@ import {
   Truck,
   LogOut
 } from 'lucide-react';
+import authUtils from '../utils/auth.js';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+
+  // Function xử lý logout
+  const handleLogout = () => {
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+      authUtils.logout();
+    }
+  };
+
+  // Lấy thông tin user hiện tại
+  const currentUser = authUtils.getCurrentUser();
+  const displayName = authUtils.getDisplayName();
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -104,8 +116,16 @@ const Layout = ({ children }) => {
                 <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                   <User className="h-5 w-5 text-gray-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">Admin</span>
-                <button className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700">{displayName}</span>
+                  {currentUser && (
+                    <span className="text-xs text-gray-500">{currentUser.role}</span>
+                  )}
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors duration-200"
+                >
                   Đăng xuất
                   <LogOut className="h-4 w-4 ml-2" /> 
                 </button>
