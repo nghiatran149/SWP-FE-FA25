@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Car, Eye, EyeOff, Lock, User } from 'lucide-react';
+import api from '../api/api.js';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +10,17 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Kiểm tra xem user đã đăng nhập chưa
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userInfo = localStorage.getItem('userInfo');
+    
+    if (token && userInfo) {
+      // User đã đăng nhập, redirect về dashboard
+      window.location.href = '/';
+    }
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -51,20 +63,59 @@ const Login = () => {
     }
 
     setIsLoading(true);
+    setErrors({}); // Clear previous errors
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Gọi API login
+      const response = await api.post('/v1/auth/login', {
+        username: formData.username,
+        password: formData.password
+      });
+
+      const { token, type, id, username, email, fullName, role } = response.data;
       
-      // Here you would typically make an API call to authenticate
-      console.log('Login attempt:', formData);
+      // Lưu token vào localStorage
+      localStorage.setItem('token', token);
       
-      // Redirect to dashboard or handle successful login
-      // window.location.href = '/';
+      // Lưu thông tin user vào localStorage
+      localStorage.setItem('userInfo', JSON.stringify({
+        id,
+        username,
+        email,
+        fullName,
+        role,
+        tokenType: type
+      }));
+      
+      console.log('Đăng nhập thành công:', { id, username, email, fullName, role });
+      console.log('Thông tin đã lưu vào localStorage:', {
+        token: token,
+        userInfo: { id, username, email, fullName, role, tokenType: type }
+      });
+      
+      // Redirect về dashboard
+      window.location.href = '/';
       
     } catch (error) {
+      console.error('Lỗi đăng nhập:', error);
+      
+      let errorMessage = 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+      
+      // Xử lý các lỗi cụ thể
+      if (error.response?.status === 401) {
+        errorMessage = 'Tên đăng nhập hoặc mật khẩu không chính xác.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Tài khoản không có quyền truy cập.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
+      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
+        errorMessage = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       setErrors({
-        submit: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'
+        submit: errorMessage
       });
     } finally {
       setIsLoading(false);
