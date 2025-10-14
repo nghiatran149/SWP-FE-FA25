@@ -1,7 +1,14 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { Search, Plus, Eye, Edit, Calendar, User, Car, X, Upload, FileText } from 'lucide-react';
+import api from '../../api/api';
 
 const WarrantyClaims = () => {
+  // State cho API và loading
+  const [warrantyClaims, setWarrantyClaims] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // State cho tìm kiếm và filter
   const [searchTermSentToManufacturer, setSearchTermSentToManufacturer] = useState('');
   const [statusFilterSentToManufacturer, setStatusFilterSentToManufacturer] = useState('all');
   const [searchTermProcessing, setSearchTermProcessing] = useState('');
@@ -11,6 +18,33 @@ const WarrantyClaims = () => {
   
   // State cho phụ tùng
   const [partQuantity, setPartQuantity] = useState(1);
+
+  // Fetch warranty claims từ API
+  const fetchWarrantyClaims = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/v1/warranty/claims');
+      console.log('API Response:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        setWarrantyClaims(response.data);
+      } else {
+        console.warn('API response is not an array:', response.data);
+        setWarrantyClaims([]);
+        setError('Dữ liệu API không đúng định dạng.');
+      }
+    } catch (err) {
+      setError('Không thể tải danh sách yêu cầu bảo hành. Vui lòng thử lại.');
+      console.error('Error fetching warranty claims:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWarrantyClaims();
+  }, []);
   
   // Danh sách phụ tùng có sẵn
   const availableParts = [
@@ -54,79 +88,32 @@ const WarrantyClaims = () => {
     attachments: []
   });
 
-  // Yêu cầu gửi sang hãng (chờ duyệt hoặc từ chối)
-  const sentToManufacturerClaims = [
-    {
-      id: 'WC005',
-      customerName: 'Trần Văn G',
-      vehicle: 'VinFast VF8',
-      vin: 'VF8XXXXXXX567890',
-      issue: 'Lỗi cảm biến áp suất lốp',
-      status: 'pending-approval',
-      createdDate: '2024-09-12',
-      requestedParts: 'Cảm biến áp suất lốp, Dây cáp kết nối',
-    },
-    {
-      id: 'WC006',
-      customerName: 'Nguyễn Thị H',
-      vehicle: 'VinFast VF9',
-      vin: 'VF9XXXXXXX234567',
-      issue: 'Màn hình giải trí không hoạt động',
-      status: 'rejected',
-      createdDate: '2024-09-11',
-      requestedParts: 'Màn hình trung tâm 15.6 inch',
-    },
-    {
-      id: 'WC007',
-      customerName: 'Phạm Văn I',
-      vehicle: 'VinFast VF8',
-      vin: 'VF8XXXXXXX890123',
-      issue: 'Hỏng camera lùi',
-      status: 'pending-approval',
-      createdDate: '2024-09-13',
-      requestedParts: 'Camera lùi, Module xử lý hình ảnh',
-    },
-  ];
+  // Phân loại yêu cầu bảo hành theo status
+  const sentToManufacturerClaims = useMemo(() => {
+    return warrantyClaims.filter(claim => 
+      claim.claimStatus === 'PENDING' || claim.claimStatus === 'REJECTED'
+    );
+  }, [warrantyClaims]);
 
-  // Yêu cầu đang xử lí (đang xử lý hoặc chờ xử lý)
-  const processingClaims = [
-    {
-      id: 'WC001',
-      customerName: 'Nguyễn Văn A',
-      vehicle: 'VinFast VF8',
-      vin: 'VF8XXXXXXX123456',
-      issue: 'Lỗi pin không sạc được',
-      status: 'processing',
-      priority: 'high',
-      createdDate: '2024-09-10',
-      assignee: 'Trần Thị B',
-      estimatedCompletion: '2024-09-15',
-    },
-    {
-      id: 'WC003',
-      customerName: 'Hoàng Thị E',
-      vehicle: 'VinFast VF8',
-      vin: 'VF8XXXXXXX345678',
-      issue: 'Lỗi phần mềm điều khiển',
-      status: 'pending',
-      priority: 'low',
-      createdDate: '2024-09-08',
-      assignee: 'Chưa phân công',
-      estimatedCompletion: '2024-09-20',
-    },
-  ];
+  const processingClaims = useMemo(() => {
+    return warrantyClaims.filter(claim => 
+      claim.claimStatus === 'APPROVED' || 
+      claim.claimStatus === 'PROCESSING' || 
+      claim.claimStatus === 'COMPLETED'
+    );
+  }, [warrantyClaims]);
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed':
+      case 'COMPLETED':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'processing':
+      case 'PROCESSING':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'pending':
+      case 'APPROVED':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'rejected':
+      case 'REJECTED':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'pending-approval':
+      case 'PENDING':
         return 'bg-orange-100 text-orange-800 border-orange-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -135,15 +122,15 @@ const WarrantyClaims = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'completed':
+      case 'COMPLETED':
         return 'Hoàn thành';
-      case 'processing':
+      case 'PROCESSING':
         return 'Đang xử lý';
-      case 'pending':
-        return 'Chờ xử lý';
-      case 'rejected':
+      case 'APPROVED':
+        return 'Chờ phân công';
+      case 'REJECTED':
         return 'Từ chối';
-      case 'pending-approval':
+      case 'PENDING':
         return 'Chờ duyệt';
       default:
         return status;
@@ -414,8 +401,8 @@ const WarrantyClaims = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="pending-approval">Chờ duyệt</option>
-              <option value="rejected">Từ chối</option>
+              <option value="PENDING">Chờ duyệt</option>
+              <option value="REJECTED">Từ chối</option>
             </select>
           </div>
         </div>
@@ -423,98 +410,111 @@ const WarrantyClaims = () => {
 
       {/* Claims Table */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mã yêu cầu
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Khách hàng
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ngày tạo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Xe
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vấn đề
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Phụ tùng yêu cầu
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Trạng thái
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {claims.map((claim) => (
-              <tr key={claim.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {claim.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <User className="h-4 w-4 text-gray-400 mr-2" />
-                    <div className="text-sm font-medium text-gray-900">{claim.customerName}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {claim.createdDate}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <Car className="h-4 w-4 text-gray-400 mr-2" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{claim.vehicle}</div>
-                      <div className="text-sm text-gray-500">{claim.vin}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.issue}>
-                    {claim.issue}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.requestedParts}>
-                    {claim.requestedParts}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.status)}`}>
-                    {getStatusText(claim.status)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
-                      <Edit className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Summary */}
-        <div className="bg-gray-50 px-6 py-3">
-          <div className="text-sm text-gray-500">
-            Hiển thị {claims.length} yêu cầu bảo hành
+        {claims.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Không có yêu cầu bảo hành</h3>
+            <p className="mt-1 text-sm text-gray-500">Chưa có yêu cầu bảo hành nào trong danh sách này.</p>
           </div>
-        </div>
+        ) : (
+          <>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mã yêu cầu
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Khách hàng
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ngày tạo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Xe
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Vấn đề
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phụ tùng yêu cầu
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {claims.map((claim) => (
+                  <tr key={claim.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {claim.claimNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 text-gray-400 mr-2" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {claim.requestDate}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Car className="h-4 w-4 text-gray-400 mr-2" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{claim.vehicle?.modelName || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{claim.vehicle?.vin || claim.vehicleVin}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.issueDescription}>
+                        {claim.issueDescription}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.partName}>
+                        {claim.partName || 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
+                        {getStatusText(claim.claimStatus)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Summary */}
+            <div className="bg-gray-50 px-6 py-3">
+              <div className="text-sm text-gray-500">
+                Hiển thị {claims.length} yêu cầu bảo hành
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );
@@ -549,9 +549,9 @@ const WarrantyClaims = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="pending">Chờ xử lý</option>
-              <option value="processing">Đang xử lý</option>
-              <option value="completed">Hoàn thành</option>
+              <option value="APPROVED">Chờ phân công</option>
+              <option value="PROCESSING">Đang xử lý</option>
+              <option value="COMPLETED">Hoàn thành</option>
             </select>
           </div>
         </div>
@@ -559,118 +559,133 @@ const WarrantyClaims = () => {
 
       {/* Claims Table */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Mã yêu cầu
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Khách hàng
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ngày tạo
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Xe
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vấn đề
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Kỹ thuật viên
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Trạng thái
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {claims.map((claim) => (
-              <tr key={claim.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {claim.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <User className="h-4 w-4 text-gray-400 mr-2" />
-                    <div className="text-sm font-medium text-gray-900">{claim.customerName}</div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    {claim.createdDate}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <Car className="h-4 w-4 text-gray-400 mr-2" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{claim.vehicle}</div>
-                      <div className="text-sm text-gray-500">{claim.vin}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.issue}>
-                    {claim.issue}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {claim.assignee}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.status)}`}>
-                    {getStatusText(claim.status)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
-                      <Edit className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Summary */}
-        <div className="bg-gray-50 px-6 py-3">
-          <div className="text-sm text-gray-500">
-            Hiển thị {claims.length} yêu cầu bảo hành
+        {claims.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Không có yêu cầu bảo hành</h3>
+            <p className="mt-1 text-sm text-gray-500">Chưa có yêu cầu bảo hành nào trong danh sách này.</p>
           </div>
-        </div>
+        ) : (
+          <>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mã yêu cầu
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Khách hàng
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ngày tạo
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Xe
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Vấn đề
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kỹ thuật viên
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {claims.map((claim) => (
+                  <tr key={claim.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {claim.claimNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 text-gray-400 mr-2" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {claim.requestDate}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Car className="h-4 w-4 text-gray-400 mr-2" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{claim.vehicle?.modelName || 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{claim.vehicle?.vin || claim.vehicleVin}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.issueDescription}>
+                        {claim.issueDescription}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {claim.technician?.fullName || 'Chưa phân công'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
+                        {getStatusText(claim.claimStatus)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                          <Edit className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Summary */}
+            <div className="bg-gray-50 px-6 py-3">
+              <div className="text-sm text-gray-500">
+                Hiển thị {claims.length} yêu cầu bảo hành
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );
 
   const filteredSentToManufacturerClaims = sentToManufacturerClaims.filter((claim) => {
     const matchesSearch = 
-      claim.id.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
-      claim.customerName.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
-      claim.vin.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase());
+      claim.claimNumber?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
+      claim.customer?.fullName?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
+      claim.vehicleVin?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
+      claim.vehicle?.vin?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase());
     
-    const matchesStatus = statusFilterSentToManufacturer === 'all' || claim.status === statusFilterSentToManufacturer;
+    const matchesStatus = statusFilterSentToManufacturer === 'all' || claim.claimStatus === statusFilterSentToManufacturer;
     
     return matchesSearch && matchesStatus;
   });
 
   const filteredProcessingClaims = processingClaims.filter((claim) => {
     const matchesSearch = 
-      claim.id.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
-      claim.customerName.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
-      claim.vin.toLowerCase().includes(searchTermProcessing.toLowerCase());
+      claim.claimNumber?.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
+      claim.customer?.fullName?.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
+      claim.vehicleVin?.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
+      claim.vehicle?.vin?.toLowerCase().includes(searchTermProcessing.toLowerCase());
     
-    const matchesStatus = statusFilterProcessing === 'all' || claim.status === statusFilterProcessing;
+    const matchesStatus = statusFilterProcessing === 'all' || claim.claimStatus === statusFilterProcessing;
     
     return matchesSearch && matchesStatus;
   });
@@ -1048,29 +1063,62 @@ const WarrantyClaims = () => {
         </button>
       </div>
 
-      {/* Yêu cầu gửi sang hãng */}
-      <div className="space-y-6">
-        <SentToManufacturerTable 
-          claims={filteredSentToManufacturerClaims}
-          searchTerm={searchTermSentToManufacturer}
-          setSearchTerm={setSearchTermSentToManufacturer}
-          statusFilter={statusFilterSentToManufacturer}
-          setStatusFilter={setStatusFilterSentToManufacturer}
-          title="Yêu cầu gửi sang hãng"
-        />
-      </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600">Đang tải dữ liệu...</span>
+        </div>
+      )}
 
-      {/* Yêu cầu đang xử lí */}
-      <div className="space-y-6">
-        <ProcessingClaimsTable 
-          claims={filteredProcessingClaims}
-          searchTerm={searchTermProcessing}
-          setSearchTerm={setSearchTermProcessing}
-          statusFilter={statusFilterProcessing}
-          setStatusFilter={setStatusFilterProcessing}
-          title="Yêu cầu đang xử lí"
-        />
-      </div>
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <X className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+              <button
+                onClick={fetchWarrantyClaims}
+                className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content - Only show when not loading */}
+      {!loading && !error && (
+        <>
+          {/* Yêu cầu gửi sang hãng */}
+          <div className="space-y-6">
+            <SentToManufacturerTable 
+              claims={filteredSentToManufacturerClaims}
+              searchTerm={searchTermSentToManufacturer}
+              setSearchTerm={setSearchTermSentToManufacturer}
+              statusFilter={statusFilterSentToManufacturer}
+              setStatusFilter={setStatusFilterSentToManufacturer}
+              title="Yêu cầu gửi sang hãng"
+            />
+          </div>
+
+          {/* Yêu cầu đang xử lí */}
+          <div className="space-y-6">
+            <ProcessingClaimsTable 
+              claims={filteredProcessingClaims}
+              searchTerm={searchTermProcessing}
+              setSearchTerm={setSearchTermProcessing}
+              statusFilter={statusFilterProcessing}
+              setStatusFilter={setStatusFilterProcessing}
+              title="Yêu cầu đang xử lí"
+            />
+          </div>
+        </>
+      )}
 
       {/* Modal tạo yêu cầu bảo hành */}
       <CreateWarrantyClaimModal />
