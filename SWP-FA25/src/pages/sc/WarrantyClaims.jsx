@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Calendar, User, Car, X, Upload, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Eye, Edit, Calendar, User, Car, X, Upload, FileText, Loader2 } from 'lucide-react';
 import api from '../../api/api';
 
 const WarrantyClaims = () => {
@@ -13,11 +13,8 @@ const WarrantyClaims = () => {
   const [statusFilterSentToManufacturer, setStatusFilterSentToManufacturer] = useState('all');
   const [searchTermProcessing, setSearchTermProcessing] = useState('');
   const [statusFilterProcessing, setStatusFilterProcessing] = useState('all');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const modalRef = useRef(null);
-  
-  // State cho phụ tùng
-  const [partQuantity, setPartQuantity] = useState(1);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
 
   // Fetch warranty claims từ API
   const fetchWarrantyClaims = async () => {
@@ -46,62 +43,25 @@ const WarrantyClaims = () => {
     fetchWarrantyClaims();
   }, []);
   
-  // Danh sách phụ tùng có sẵn
-  const availableParts = [
-    { id: 'battery-cell', name: 'Pin cell lithium-ion', category: 'Battery' },
-    { id: 'battery-module', name: 'Module pin', category: 'Battery' },
-    { id: 'battery-pack', name: 'Bộ pin hoàn chỉnh', category: 'Battery' },
-    { id: 'motor-front', name: 'Động cơ điện trước', category: 'Motor' },
-    { id: 'motor-rear', name: 'Động cơ điện sau', category: 'Motor' },
-    { id: 'inverter', name: 'Bộ nghịch lưu', category: 'Electronics' },
-    { id: 'onboard-charger', name: 'Bộ sạc tích hợp', category: 'Charging' },
-    { id: 'dc-converter', name: 'Bộ chuyển đổi DC-DC', category: 'Electronics' },
-    { id: 'display-center', name: 'Màn hình trung tâm 15.6 inch', category: 'Infotainment' },
-    { id: 'display-cluster', name: 'Màn hình taplo', category: 'Infotainment' },
-    { id: 'camera-rear', name: 'Camera lùi', category: 'Sensors' },
-    { id: 'camera-front', name: 'Camera trước', category: 'Sensors' },
-    { id: 'sensor-pressure', name: 'Cảm biến áp suất lốp', category: 'Sensors' },
-    { id: 'sensor-proximity', name: 'Cảm biến khoảng cách', category: 'Sensors' },
-    { id: 'cable-charging', name: 'Dây cáp sạc', category: 'Charging' },
-    { id: 'cable-data', name: 'Dây cáp kết nối dữ liệu', category: 'Electronics' },
-    { id: 'ecu-main', name: 'Hộp điều khiển trung tâm (ECU)', category: 'Electronics' },
-    { id: 'door-handle', name: 'Tay nắm cửa thông minh', category: 'Body' },
-    { id: 'mirror-side', name: 'Gương chiếu hậu', category: 'Body' },
-    { id: 'light-headlight', name: 'Đèn pha LED', category: 'Body' },
-    { id: 'light-taillight', name: 'Đèn hậu LED', category: 'Body' }
-  ];
-  
   // Form state cho modal tạo yêu cầu bảo hành
   const [formData, setFormData] = useState({
-    customerName: '',
-    phoneNumber: '',
-    email: '',
-    vehicleModel: '',
     vin: '',
-    licensePlate: '',
-    purchaseDate: '',
-    warrantyType: 'standard',
-    issueCategory: '',
     issueDescription: '',
-    urgencyLevel: 'medium',
-    requestedParts: [],
-    attachments: []
+    diagnosisReport: '',
+    requestDate: '',
+    imageUrls: []
   });
 
   // Phân loại yêu cầu bảo hành theo status
-  const sentToManufacturerClaims = useMemo(() => {
-    return warrantyClaims.filter(claim => 
-      claim.claimStatus === 'PENDING' || claim.claimStatus === 'REJECTED'
-    );
-  }, [warrantyClaims]);
+  const sentToManufacturerClaims = warrantyClaims.filter(claim => 
+    claim.claimStatus === 'PENDING' || claim.claimStatus === 'REJECTED'
+  );
 
-  const processingClaims = useMemo(() => {
-    return warrantyClaims.filter(claim => 
-      claim.claimStatus === 'APPROVED' || 
-      claim.claimStatus === 'PROCESSING' || 
-      claim.claimStatus === 'COMPLETED'
-    );
-  }, [warrantyClaims]);
+  const processingClaims = warrantyClaims.filter(claim => 
+    claim.claimStatus === 'APPROVED' || 
+    claim.claimStatus === 'PROCESSING' || 
+    claim.claimStatus === 'COMPLETED'
+  );
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -137,32 +97,48 @@ const WarrantyClaims = () => {
     }
   };
 
-  // Handlers cho modal
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
+  // Hàm thêm warranty claim mới
+  const handleAddWarrantyClaim = async (e) => {
+    if (e) e.preventDefault();
+    setAddLoading(true);
+    
+    try {
+      const claimData = {
+        ...formData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const response = await api.post('/v1/warranty/claims', claimData);
+      
+      if (response.status === 201) {
+        // Thêm thành công - refresh danh sách
+        await fetchWarrantyClaims();
+        setShowAddModal(false);
+        resetForm();
+        setError(null); // Clear any previous errors
+        // Có thể thêm toast notification ở đây
+      }
+    } catch (err) {
+      console.error('Error adding warranty claim:', err);
+      setError('Không thể tạo yêu cầu bảo hành. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setAddLoading(false);
+    }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  // Reset form
+  const resetForm = () => {
     setFormData({
-      customerName: '',
-      phoneNumber: '',
-      email: '',
-      vehicleModel: '',
       vin: '',
-      licensePlate: '',
-      purchaseDate: '',
-      warrantyType: 'standard',
-      issueCategory: '',
       issueDescription: '',
-      urgencyLevel: 'medium',
-      requestedParts: [],
-      attachments: []
+      diagnosisReport: '',
+      requestDate: '',
+      imageUrls: []
     });
-    // Reset part selection
-    setPartQuantity(1);
   };
 
+  // Xử lý thay đổi input
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -173,203 +149,19 @@ const WarrantyClaims = () => {
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
+    const fileNames = files.map(file => file.name);
     setFormData(prev => ({
       ...prev,
-      attachments: [...prev.attachments, ...files]
+      imageUrls: [...prev.imageUrls, ...fileNames]
     }));
   };
 
   const removeAttachment = (index) => {
     setFormData(prev => ({
       ...prev,
-      attachments: prev.attachments.filter((_, i) => i !== index)
+      imageUrls: prev.imageUrls.filter((_, i) => i !== index)
     }));
   };
-
-  const addRequestedPart = useCallback((selectedPart) => {
-    if (selectedPart && partQuantity > 0) {
-      const part = availableParts.find(p => p.id === selectedPart);
-      if (part) {
-        const existingPartIndex = formData.requestedParts.findIndex(p => p.id === selectedPart);
-        
-        if (existingPartIndex !== -1) {
-          // Nếu phụ tùng đã tồn tại, cập nhật số lượng
-          const updatedParts = [...formData.requestedParts];
-          updatedParts[existingPartIndex].quantity += partQuantity;
-          setFormData(prev => ({
-            ...prev,
-            requestedParts: updatedParts
-          }));
-        } else {
-          // Thêm phụ tùng mới
-          setFormData(prev => ({
-            ...prev,
-            requestedParts: [...prev.requestedParts, {
-              id: part.id,
-              name: part.name,
-              category: part.category,
-              quantity: partQuantity
-            }]
-          }));
-        }
-        
-        // Reset quantity
-        setPartQuantity(1);
-        
-        // Giữ vị trí scroll
-        if (modalRef.current) {
-          const scrollTop = modalRef.current.scrollTop;
-          setTimeout(() => {
-            if (modalRef.current) {
-              modalRef.current.scrollTop = scrollTop;
-            }
-          }, 0);
-        }
-      }
-    }
-  }, [formData.requestedParts, partQuantity]);
-
-  const removeRequestedPart = useCallback((index) => {
-    // Giữ vị trí scroll trước khi xóa
-    const scrollTop = modalRef.current?.scrollTop;
-    
-    setFormData(prev => ({
-      ...prev,
-      requestedParts: prev.requestedParts.filter((_, i) => i !== index)
-    }));
-    
-    // Khôi phục vị trí scroll sau khi xóa
-    setTimeout(() => {
-      if (modalRef.current && scrollTop !== undefined) {
-        modalRef.current.scrollTop = scrollTop;
-      }
-    }, 0);
-  }, []);
-
-  const updatePartQuantity = useCallback((index, newQuantity) => {
-    if (newQuantity > 0) {
-      // Giữ vị trí scroll trước khi cập nhật
-      const scrollTop = modalRef.current?.scrollTop;
-      
-      const updatedParts = [...formData.requestedParts];
-      updatedParts[index].quantity = newQuantity;
-      setFormData(prev => ({
-        ...prev,
-        requestedParts: updatedParts
-      }));
-      
-      // Khôi phục vị trí scroll sau khi cập nhật
-      setTimeout(() => {
-        if (modalRef.current && scrollTop !== undefined) {
-          modalRef.current.scrollTop = scrollTop;
-        }
-      }, 0);
-    }
-  }, [formData.requestedParts]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Logic xử lý submit form
-    console.log('Form data:', formData);
-    // Reset form và đóng modal
-    handleCloseModal();
-  };
-
-  // Component chọn phụ tùng riêng biệt
-  const PartSelector = React.memo(({ onAddPart, partQuantity, setPartQuantity }) => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedPart, setSelectedPart] = useState('');
-
-    const handleAddPart = useCallback(() => {
-      if (selectedPart) {
-        onAddPart(selectedPart);
-        setSelectedPart('');
-        setSearchTerm('');
-      }
-    }, [selectedPart, onAddPart]);
-
-    const filteredParts = useMemo(() => {
-      return availableParts.filter((part) => 
-        part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        part.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }, [searchTerm]);
-
-    return (
-      <div className="space-y-4">
-        {/* Thanh tìm kiếm */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Tìm kiếm phụ tùng
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Nhập tên phụ tùng hoặc danh mục..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Danh sách phụ tùng */}
-        <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-md">
-          {filteredParts.map((part) => (
-            <div
-              key={part.id}
-              className={`p-3 border-b border-gray-100 last:border-b-0 cursor-pointer hover:bg-gray-50 ${
-                selectedPart === part.id ? 'bg-blue-50 border-blue-200' : ''
-              }`}
-              onClick={() => setSelectedPart(part.id)}
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="font-medium text-gray-900">{part.name}</div>
-                  <div className="text-sm text-gray-500">{part.category}</div>
-                </div>
-                {selectedPart === part.id && (
-                  <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-          {filteredParts.length === 0 && (
-            <div className="p-4 text-center text-gray-500 text-sm">
-              Không tìm thấy phụ tùng phù hợp
-            </div>
-          )}
-        </div>
-
-        {/* Số lượng và nút thêm */}
-        <div className="flex gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Số lượng
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={partQuantity}
-              onChange={(e) => setPartQuantity(parseInt(e.target.value) || 1)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleAddPart}
-            disabled={!selectedPart}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
-          >
-            Thêm phụ tùng
-          </button>
-        </div>
-      </div>
-    );
-  });
 
   // Component con để render bảng yêu cầu gửi sang hãng
   const SentToManufacturerTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title }) => (
@@ -690,360 +482,6 @@ const WarrantyClaims = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Modal Component
-  const CreateWarrantyClaimModal = () => {
-    if (!isModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div 
-          ref={modalRef}
-          className="bg-white border border-gray-600 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide"
-        >
-          {/* Modal Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Tạo yêu cầu bảo hành mới</h2>
-            <button
-              onClick={handleCloseModal}
-              className="p-2 bg-red-600 hover:bg-red-800 rounded-full transition-colors"
-            >
-              <X className="h-5 w-5 text-white" />
-            </button>
-          </div>
-
-          {/* Modal Body */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Thông tin khách hàng */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                Thông tin khách hàng
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên khách hàng <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="customerName"
-                    value={formData.customerName}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Nhập tên khách hàng"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Số điện thoại <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Nhập số điện thoại"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Nhập địa chỉ email"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Thông tin xe */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                Thông tin xe
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Model xe <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="vehicleModel"
-                    value={formData.vehicleModel}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Chọn model xe</option>
-                    <option value="VF8">VinFast VF8</option>
-                    <option value="VF9">VinFast VF9</option>
-                    <option value="VF5">VinFast VF5</option>
-                    <option value="VF6">VinFast VF6</option>
-                    <option value="VF7">VinFast VF7</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    VIN <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="vin"
-                    value={formData.vin}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Nhập số VIN"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Biển số xe
-                  </label>
-                  <input
-                    type="text"
-                    name="licensePlate"
-                    value={formData.licensePlate}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Nhập biển số xe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ngày mua xe <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="date"
-                    name="purchaseDate"
-                    value={formData.purchaseDate}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Thông tin bảo hành */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                Thông tin bảo hành
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Loại bảo hành
-                  </label>
-                  <select
-                    name="warrantyType"
-                    value={formData.warrantyType}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="standard">Bảo hành tiêu chuẩn</option>
-                    <option value="extended">Bảo hành mở rộng</option>
-                    <option value="goodwill">Thiện chí</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Danh mục vấn đề <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="issueCategory"
-                    value={formData.issueCategory}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option value="">Chọn danh mục</option>
-                    <option value="battery">Hệ thống pin</option>
-                    <option value="motor">Động cơ điện</option>
-                    <option value="electronics">Hệ thống điện tử</option>
-                    <option value="infotainment">Hệ thống giải trí</option>
-                    <option value="sensors">Cảm biến</option>
-                    <option value="charging">Hệ thống sạc</option>
-                    <option value="body">Thân vỏ</option>
-                    <option value="other">Khác</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mức độ ưu tiên
-                  </label>
-                  <select
-                    name="urgencyLevel"
-                    value={formData.urgencyLevel}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="low">Thấp</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="high">Cao</option>
-                    <option value="urgent">Khẩn cấp</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mô tả vấn đề <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="issueDescription"
-                  value={formData.issueDescription}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Mô tả chi tiết vấn đề cần bảo hành..."
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phụ tùng yêu cầu
-                </label>
-                
-                {/* Form thêm phụ tùng */}
-                <div className="border border-gray-300 rounded-md p-4">
-                  <PartSelector 
-                    onAddPart={addRequestedPart}
-                    partQuantity={partQuantity}
-                    setPartQuantity={setPartQuantity}
-                  />
-                </div>
-
-                {/* Danh sách phụ tùng đã chọn */}
-                {formData.requestedParts.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Phụ tùng đã chọn:</h4>
-                    <div className="space-y-2">
-                      {formData.requestedParts.map((part, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-md border"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-gray-900">{part.name}</div>
-                            <div className="text-sm text-gray-500">{part.category}</div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <label className="text-sm text-gray-600">Số lượng:</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={part.quantity}
-                              onChange={(e) => updatePartQuantity(index, parseInt(e.target.value) || 1)}
-                              className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeRequestedPart(index)}
-                              className="text-red-500 hover:text-red-700 p-1"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* File đính kèm */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                Tài liệu đính kèm
-              </h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hình ảnh/Tài liệu
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                  <div className="text-center">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="mt-4">
-                      <label htmlFor="file-upload" className="cursor-pointer">
-                        <span className="mt-2 block text-sm font-medium text-gray-900">
-                          Nhấp để tải lên tệp
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          hoặc kéo và thả tệp vào đây
-                        </span>
-                      </label>
-                      <input
-                        id="file-upload"
-                        name="file-upload"
-                        type="file"
-                        className="sr-only"
-                        multiple
-                        accept="image/*,.pdf,.doc,.docx"
-                        onChange={handleFileUpload}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      PNG, JPG, PDF, DOC lên tới 10MB
-                    </p>
-                  </div>
-                </div>
-
-                {/* Hiển thị file đã upload */}
-                {formData.attachments.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium text-gray-700">Tệp đã tải lên:</p>
-                    {formData.attachments.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                        <div className="flex items-center">
-                          <FileText className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="text-sm text-gray-900">{file.name}</span>
-                          <span className="text-xs text-gray-500 ml-2">({Math.round(file.size / 1024)} KB)</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeAttachment(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Tạo yêu cầu
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -1056,7 +494,7 @@ const WarrantyClaims = () => {
         </div>
         <button 
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600"
-          onClick={handleOpenModal}
+          onClick={() => setShowAddModal(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
           Tạo yêu cầu mới
@@ -1121,7 +559,209 @@ const WarrantyClaims = () => {
       )}
 
       {/* Modal tạo yêu cầu bảo hành */}
-      <CreateWarrantyClaimModal />
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Tạo yêu cầu bảo hành mới
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      resetForm();
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Error message */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-md">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                )}
+
+                {/* Form */}
+                <form>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Thông tin xe */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                        <Car className="h-5 w-5 mr-2 text-blue-500" />
+                        Thông tin xe
+                      </h4>
+                      <div className="space-y-4">
+                        {/* VIN */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            VIN <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="vin"
+                            value={formData.vin}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="Nhập số VIN"
+                          />
+                        </div>
+
+                        {/* Ngày yêu cầu */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày yêu cầu <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="requestDate"
+                            value={formData.requestDate}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Thông tin sự cố */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                        <FileText className="h-5 w-5 mr-2 text-green-500" />
+                        Thông tin sự cố
+                      </h4>
+                      <div className="space-y-4">
+                        {/* Mô tả vấn đề */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Mô tả vấn đề <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            name="issueDescription"
+                            value={formData.issueDescription}
+                            onChange={handleInputChange}
+                            required
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="Mô tả chi tiết vấn đề cần bảo hành..."
+                          />
+                        </div>
+
+                        {/* Báo cáo chẩn đoán */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Báo cáo chẩn đoán <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            name="diagnosisReport"
+                            value={formData.diagnosisReport}
+                            onChange={handleInputChange}
+                            required
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="Nhập báo cáo chẩn đoán kỹ thuật..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hình ảnh đính kèm */}
+                  <div className="mt-6">
+                    <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                      <Upload className="h-5 w-5 mr-2 text-purple-500" />
+                      Hình ảnh đính kèm
+                    </h4>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                      <div className="text-center">
+                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                        <div className="mt-2">
+                          <label htmlFor="file-upload" className="cursor-pointer">
+                            <span className="text-sm font-medium text-primary-600 hover:text-primary-500">
+                              Tải lên hình ảnh
+                            </span>
+                            <span className="text-sm text-gray-500"> hoặc kéo thả vào đây</span>
+                          </label>
+                          <input
+                            id="file-upload"
+                            name="file-upload"
+                            type="file"
+                            className="sr-only"
+                            multiple
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PNG, JPG, JPEG lên tới 5MB
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Hiển thị file đã upload */}
+                    {formData.imageUrls.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium text-gray-700">Hình ảnh đã tải lên:</p>
+                        {formData.imageUrls.map((fileName, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                            <div className="flex items-center">
+                              <FileText className="h-4 w-4 text-gray-400 mr-2" />
+                              <span className="text-sm text-gray-900">{fileName}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(index)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Footer buttons */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleAddWarrantyClaim}
+                  disabled={addLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  {addLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {addLoading ? 'Đang tạo...' : 'Tạo yêu cầu'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForm();
+                  }}
+                  disabled={addLoading}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none disabled:opacity-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
