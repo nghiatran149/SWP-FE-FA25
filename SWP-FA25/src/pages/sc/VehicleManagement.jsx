@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Eye, Edit, Car, Calendar, User, MapPin, Battery, Settings, AlertCircle, X, Package, Wrench, Calendar as CalendarIcon } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Car, Calendar, CalendarOff, User, MapPin, Battery, Settings, AlertCircle, X, Package, Wrench } from 'lucide-react';
 import api from '../../api/api';
 
 const VehicleManagement = () => {
@@ -11,6 +11,23 @@ const VehicleManagement = () => {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [vehicleModels, setVehicleModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+
+  // Form state cho thêm xe
+  const [formData, setFormData] = useState({
+    vin: '',
+    model: '',
+    year: new Date().getFullYear(),
+    color: '',
+    warrantyStartDate: '',
+    warrantyEndDate: '',
+    identityNumber: '',
+    odometerKm: 0,
+    purchaseDate: ''
+  });
 
   // Fetch vehicles từ API
   const fetchVehicles = async () => {
@@ -47,6 +64,92 @@ const VehicleManagement = () => {
   useEffect(() => {
     fetchVehicles();
   }, []);
+
+  // Fetch vehicle models từ API
+  const fetchVehicleModels = async () => {
+    try {
+      setModelsLoading(true);
+      const response = await api.get('/v1/admin/vehicle-models');
+      console.log('Vehicle Models Response:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        // Lọc chỉ những model đang active
+        const activeModels = response.data.filter(model => model.isActive);
+        setVehicleModels(activeModels);
+      } else {
+        console.warn('Vehicle models API response is not an array:', response.data);
+        setVehicleModels([]);
+      }
+    } catch (err) {
+      console.error('Error fetching vehicle models:', err);
+      setVehicleModels([]);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
+
+  // Handle input change
+  const handleInputChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseInt(value, 10) || 0 : value
+    }));
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      vin: '',
+      model: '',
+      year: new Date().getFullYear(),
+      color: '',
+      warrantyStartDate: '',
+      warrantyEndDate: '',
+      identityNumber: '',
+      odometerKm: 0,
+      purchaseDate: ''
+    });
+    setError(null);
+  };
+
+  // Hàm thêm xe mới
+  const handleAddVehicle = async (e) => {
+    if (e) e.preventDefault();
+    setAddLoading(true);
+    
+    try {
+      const vehicleData = {
+        vin: formData.vin,
+        model: formData.model, // Đây sẽ là modelName từ dropdown
+        year: formData.year,
+        color: formData.color,
+        warrantyStartDate: formData.warrantyStartDate,
+        warrantyEndDate: formData.warrantyEndDate,
+        identityNumber: formData.identityNumber,
+        odometerKm: formData.odometerKm,
+        purchaseDate: formData.purchaseDate
+      };
+      
+      console.log('Sending vehicle data:', vehicleData);
+      const response = await api.post('/v1/vehicles', vehicleData);
+      
+      if (response.status === 201) {
+        // Thêm thành công - refresh danh sách
+        await fetchVehicles();
+        setShowAddModal(false);
+        resetForm();
+        setError(null);
+        console.log('Vehicle added successfully:', response.data);
+      }
+    } catch (err) {
+      console.error('Error adding vehicle:', err);
+      console.error('Error response:', err.response?.data);
+      setError(err.response?.data?.message || 'Không thể thêm xe. Vui lòng thử lại.');
+    } finally {
+      setAddLoading(false);
+    }
+  };
 
   // Fetch vehicle detail by VIN
   const fetchVehicleDetail = async (vin) => {
@@ -103,7 +206,7 @@ const VehicleManagement = () => {
     if (isExpired) {
       return 'bg-red-100 text-red-800 border-red-200';
     } else if (isActive) {
-      return 'bg-green-100 text-green-800 border-green-200';
+      return 'bg-teal-100 text-teal-800 border-teal-200';
     } else {
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     }
@@ -178,7 +281,13 @@ const VehicleManagement = () => {
             Theo dõi thông tin xe và lịch sử bảo dưỡng
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600">
+        <button 
+          onClick={() => {
+            setShowAddModal(true);
+            fetchVehicleModels(); // Fetch models when opening modal
+          }}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Đăng ký xe mới
         </button>
@@ -224,7 +333,7 @@ const VehicleManagement = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Battery className="h-6 w-6 text-yellow-400" />
+                <Calendar className="h-6 w-6 text-teal-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -242,7 +351,7 @@ const VehicleManagement = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Calendar className="h-6 w-6 text-red-400" />
+                <CalendarOff className="h-6 w-6 text-red-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -412,7 +521,7 @@ const VehicleManagement = () => {
                     >
                       <Eye className="h-4 w-4" />
                     </button>
-                    <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                    <button className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-md bg-transparent">
                       <Edit className="h-4 w-4" />
                     </button>
                   </div>
@@ -572,7 +681,7 @@ const VehicleManagement = () => {
                                 <div className="flex justify-between">
                                   <span>Ngày lắp đặt:</span>
                                   <span className="flex items-center">
-                                    <CalendarIcon className="h-3 w-3 mr-1" />
+                                    <Calendar className="h-3 w-3 mr-1" />
                                     {formatDate(part.installDate)}
                                   </span>
                                 </div>
@@ -617,6 +726,248 @@ const VehicleManagement = () => {
               </div>
               </div>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Modal thêm xe mới */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Đăng ký xe mới
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      resetForm();
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Error message */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-md">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                )}
+
+                {/* Form */}
+                <form onSubmit={handleAddVehicle}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Thông tin xe */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                        <Car className="h-5 w-5 mr-2 text-blue-500" />
+                        Thông tin xe
+                      </h4>
+                      <div className="space-y-4">
+                        {/* VIN */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Số VIN <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="vin"
+                            value={formData.vin}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="VIN1234567890TEST333"
+                          />
+                        </div>
+
+                        {/* Model */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Model xe <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="model"
+                            value={formData.model}
+                            onChange={handleInputChange}
+                            required
+                            disabled={modelsLoading}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <option value="">
+                              {modelsLoading ? 'Đang tải models...' : 'Chọn model xe'}
+                            </option>
+                            {vehicleModels.map((model) => (
+                              <option key={model.id} value={model.modelName}>
+                                {model.modelName} ({model.brand} - {model.year})
+                              </option>
+                            ))}
+                          </select>
+                          {modelsLoading && (
+                            <p className="text-xs text-gray-500 mt-1 flex items-center">
+                              <Settings className="h-3 w-3 mr-1 animate-spin" />
+                              Đang tải danh sách models...
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Năm sản xuất */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Năm sản xuất <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="year"
+                            value={formData.year}
+                            onChange={handleInputChange}
+                            required
+                            min="2015"
+                            max="2030"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+
+                        {/* Màu sắc */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Màu sắc <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="color"
+                            value={formData.color}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="Đỏ, Trắng, Đen..."
+                          />
+                        </div>
+
+                        {/* Số km hiện tại */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Số km hiện tại
+                          </label>
+                          <input
+                            type="number"
+                            name="odometerKm"
+                            value={formData.odometerKm}
+                            onChange={handleInputChange}
+                            min="0"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Thông tin bảo hành & mua xe */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                        <Calendar className="h-5 w-5 mr-2 text-green-500" />
+                        Thông tin bảo hành & mua xe
+                      </h4>
+                      <div className="space-y-4">
+                        {/* Số CCCD chủ xe */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Số CCCD chủ xe <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="identityNumber"
+                            value={formData.identityNumber}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="090909090900"
+                          />
+                        </div>
+
+                        {/* Ngày mua xe */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày mua xe <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="purchaseDate"
+                            value={formData.purchaseDate}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+
+                        {/* Ngày bắt đầu bảo hành */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày bắt đầu bảo hành <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="warrantyStartDate"
+                            value={formData.warrantyStartDate}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+
+                        {/* Ngày kết thúc bảo hành */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày kết thúc bảo hành <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="warrantyEndDate"
+                            value={formData.warrantyEndDate}
+                            onChange={handleInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* Footer buttons */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleAddVehicle}
+                  disabled={addLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-teal-600 text-base font-medium text-white hover:bg-teal-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  {addLoading && <Settings className="h-4 w-4 mr-2 animate-spin" />}
+                  {addLoading ? 'Đang đăng ký...' : 'Đăng ký xe'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForm();
+                  }}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
