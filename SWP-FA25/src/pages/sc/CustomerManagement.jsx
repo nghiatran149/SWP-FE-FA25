@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Eye, Edit, Phone, Mail, MapPin, Calendar, Car, CreditCard, User, Loader2, X, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Phone, Mail, MapPin, Calendar, Car, CreditCard, User, Loader2, X, ToggleLeft, ToggleRight, AlertCircle, BookOpen, UserCheck, UserX } from 'lucide-react';
 import api from '../../api/api';
 
 const CustomerManagement = () => {
@@ -14,6 +14,12 @@ const CustomerManagement = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [toggleLoading, setToggleLoading] = useState({});
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  // State cho modal view detail
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedViewCustomer, setSelectedViewCustomer] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
+
   const [pagination, setPagination] = useState({
     page: 0,
     size: 10,
@@ -221,6 +227,27 @@ const CustomerManagement = () => {
     }
   };
 
+  // Hàm xem chi tiết customer
+  const handleViewCustomer = async (customerId) => {
+    try {
+      setViewLoading(true);
+      setSelectedViewCustomer(null);
+      setShowViewModal(true);
+      
+      const response = await api.get(`/v1/customers/${customerId}`);
+      
+      if (response.status === 200) {
+        setSelectedViewCustomer(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching customer details:', err);
+      setError('Không thể tải chi tiết khách hàng.');
+      setShowViewModal(false);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN');
@@ -305,7 +332,7 @@ const CustomerManagement = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <CreditCard className="h-6 w-6 text-green-400" />
+                <UserCheck className="h-6 w-6 text-green-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -323,7 +350,7 @@ const CustomerManagement = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <CreditCard className="h-6 w-6 text-red-400" />
+                <UserX className="h-6 w-6 text-red-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -341,7 +368,7 @@ const CustomerManagement = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Calendar className="h-6 w-6 text-yellow-400" />
+                <BookOpen className="h-6 w-6 text-yellow-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -493,7 +520,11 @@ const CustomerManagement = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2 items-center">
-                      <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
+                      <button 
+                        onClick={() => handleViewCustomer(customer.id)}
+                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                        title="Xem chi tiết"
+                      >
                         <Eye className="h-4 w-4" />
                       </button>
                       <button 
@@ -951,6 +982,170 @@ const CustomerManagement = () => {
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
                 >
                   Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal view customer detail */}
+      {showViewModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="flex items-center justify-between pb-3">
+                  <h3 className="text-lg font-medium text-gray-900">Chi tiết khách hàng</h3>
+                  <button
+                    onClick={() => {
+                      setShowViewModal(false);
+                      setSelectedViewCustomer(null);
+                    }}
+                    className="text-gray-400 bg-transparent hover:text-gray-600"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="mt-4">
+                  {viewLoading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    </div>
+                  ) : selectedViewCustomer ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Thông tin cá nhân */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium text-gray-900 border-b pb-2">Thông tin cá nhân</h4>
+                    
+                    <div className="grid grid-cols-1 gap-3">
+                      <div className="flex items-start">
+                        <User className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Họ và tên</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.fullName}</dd>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <Mail className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Email</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.email}</dd>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <Phone className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Số điện thoại</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.phoneNumber}</dd>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <CreditCard className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">CCCD/CMND</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.idNumber}</dd>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <MapPin className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Địa chỉ</dt>
+                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.address}</dd>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start">
+                        <Calendar className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>
+                          <dd className="mt-1">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              selectedViewCustomer.isActive 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {selectedViewCustomer.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                            </span>
+                          </dd>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Danh sách xe */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium text-gray-900 border-b pb-2">Danh sách xe sở hữu</h4>
+                    
+                    {selectedViewCustomer.vehicles && selectedViewCustomer.vehicles.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedViewCustomer.vehicles.map((vehicle, index) => (
+                          <div key={index} className="bg-gray-50 rounded-lg p-4">
+                            <div className="flex items-start">
+                              <Car className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <h5 className="text-sm font-medium text-gray-900">
+                                    {vehicle.model} {vehicle.year}
+                                  </h5>
+                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                    vehicle.warrantyStatus === 'ACTIVE' 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : vehicle.warrantyStatus === 'EXPIRED'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {vehicle.warrantyStatus === 'ACTIVE' ? 'Bảo hành' : 
+                                     vehicle.warrantyStatus === 'EXPIRED' ? 'Hết bảo hành' : 'Chờ kích hoạt'}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">VIN: {vehicle.vin}</p>
+                                <p className="text-sm text-gray-600">Biển số: {vehicle.licensePlate}</p>
+                                <p className="text-sm text-gray-600">
+                                  Bảo hành đến: {vehicle.warrantyEndDate ? formatDate(vehicle.warrantyEndDate) : 'Chưa xác định'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-500">Khách hàng chưa sở hữu xe nào</p>
+                      </div>
+                    )}
+                  </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                      <p className="text-gray-500">Không thể tải thông tin khách hàng</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedViewCustomer(null);
+                  }}
+                  className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Đóng
                 </button>
               </div>
             </div>

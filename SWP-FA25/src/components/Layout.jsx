@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Shield,
@@ -22,6 +22,7 @@ import authUtils from '../utils/auth.js';
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Function xử lý logout
   const handleLogout = () => {
@@ -34,19 +35,34 @@ const Layout = ({ children }) => {
   const currentUser = authUtils.getCurrentUser();
   const displayName = authUtils.getDisplayName();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield },
-    { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench },
-    { name: 'Duyệt yêu cầu bảo hành', href: '/warranty-approval', icon: CheckCircle },
-    { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone },
-    { name: 'Quản lý phụ tùng', href: '/parts', icon: Settings },
-    { name: 'Quản lý khách hàng', href: '/customers', icon: User },
-    { name: 'Quản lý xe', href: '/vehicles', icon: Car },
-    { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserCheck },
-    { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck },
-    { name: 'Báo cáo & Phân tích', href: '/reports', icon: BarChart3 },
+  // Định nghĩa tất cả navigation items
+  const allNavigationItems = [
+    { name: 'Trang chủ', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'EVM_STAFF', 'SC_STAFF', 'SC_TECHNICIAN'] },
+    
+    { name: 'Dashboard', href: '/dashboard', icon: BarChart3, roles: ['ADMIN'] },
+    { name: 'Báo cáo & Phân tích', href: '/reports', icon: BarChart3, roles: ['ADMIN'] },
+    { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck, roles: ['ADMIN'] },
+
+    { name: 'Duyệt yêu cầu bảo hành', href: '/warranty-approval', icon: CheckCircle, roles: ['EVM_STAFF'] },
+    { name: 'Quản lý phụ tùng', href: '/parts', icon: Settings, roles: ['EVM_STAFF'] },
+    
+    { name: 'Quản lý khách hàng', href: '/customers', icon: User, roles: ['SC_STAFF'] },
+    { name: 'Quản lý xe', href: '/vehicles', icon: Car, roles: ['SC_STAFF'] },
+    { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield, roles: ['SC_STAFF'] },
+    { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserCheck, roles: ['SC_STAFF'] },
+    { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone, roles: ['SC_STAFF'] },
+
+    { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench, roles: ['SC_TECHNICIAN'] },
   ];
+
+  // Function lọc navigation theo role
+  const getNavigationForRole = (userRole) => {
+    if (!userRole) return [];
+    return allNavigationItems.filter(item => item.roles.includes(userRole));
+  };
+
+  // Lấy navigation items theo role của user hiện tại
+  const navigation = getNavigationForRole(currentUser?.role);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -67,29 +83,35 @@ const Layout = ({ children }) => {
         
         <nav className="mt-8 px-4">
           <ul className="space-y-2">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <li key={item.name}>
-                  <Link
-                    to={item.href}
-                    className={`${
-                      isActive
-                        ? 'bg-primary-50 border-primary-500 text-primary-700'
-                        : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    } group flex items-center px-3 py-2 text-sm font-medium border-l-4 transition-colors duration-200`}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <item.icon
+            {navigation.length > 0 ? (
+              navigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <li key={item.name}>
+                    <Link
+                      to={item.href}
                       className={`${
-                        isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
-                      } mr-3 h-6 w-6`}
-                    />
-                    {item.name}
-                  </Link>
-                </li>
-              );
-            })}
+                        isActive
+                          ? 'bg-primary-50 border-primary-500 text-primary-700'
+                          : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      } group flex items-center px-3 py-2 text-sm font-medium border-l-4 transition-colors duration-200`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <item.icon
+                        className={`${
+                          isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
+                        } mr-3 h-6 w-6`}
+                      />
+                      {item.name}
+                    </Link>
+                  </li>
+                );
+              })
+            ) : (
+              <li className="px-3 py-2 text-sm text-gray-500 italic">
+                Không có menu khả dụng cho vai trò này
+              </li>
+            )}
           </ul>
         </nav>
       </div>
