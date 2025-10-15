@@ -15,6 +15,11 @@ const VehicleManagement = () => {
   const [addLoading, setAddLoading] = useState(false);
   const [vehicleModels, setVehicleModels] = useState([]);
   const [modelsLoading, setModelsLoading] = useState(false);
+  
+  // Edit modal states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState(null);
 
   // Form state cho thêm xe
   const [formData, setFormData] = useState({
@@ -25,6 +30,18 @@ const VehicleManagement = () => {
     warrantyStartDate: '',
     warrantyEndDate: '',
     identityNumber: '',
+    odometerKm: 0,
+    purchaseDate: ''
+  });
+
+  // Form state cho edit xe
+  const [editFormData, setEditFormData] = useState({
+    model: '',
+    year: new Date().getFullYear(),
+    color: '',
+    warrantyStartDate: '',
+    warrantyEndDate: '',
+    vehicleStatus: 'ACTIVE',
     odometerKm: 0,
     purchaseDate: ''
   });
@@ -97,6 +114,15 @@ const VehicleManagement = () => {
     }));
   };
 
+  // Handle edit input change
+  const handleEditInputChange = (e) => {
+    const { name, value, type } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseInt(value, 10) || 0 : value
+    }));
+  };
+
   // Reset form
   const resetForm = () => {
     setFormData({
@@ -110,6 +136,22 @@ const VehicleManagement = () => {
       odometerKm: 0,
       purchaseDate: ''
     });
+    setError(null);
+  };
+
+  // Reset edit form
+  const resetEditForm = () => {
+    setEditFormData({
+      model: '',
+      year: new Date().getFullYear(),
+      color: '',
+      warrantyStartDate: '',
+      warrantyEndDate: '',
+      vehicleStatus: 'ACTIVE',
+      odometerKm: 0,
+      purchaseDate: ''
+    });
+    setEditingVehicle(null);
     setError(null);
   };
 
@@ -148,6 +190,70 @@ const VehicleManagement = () => {
       setError(err.response?.data?.message || 'Không thể thêm xe. Vui lòng thử lại.');
     } finally {
       setAddLoading(false);
+    }
+  };
+
+  // Hàm mở modal edit và load thông tin xe
+  const handleEditVehicle = async (vehicle) => {
+    setEditingVehicle(vehicle);
+    
+    // Load vehicle models nếu chưa có
+    if (vehicleModels.length === 0) {
+      await fetchVehicleModels();
+    }
+    
+    // Set form data với thông tin hiện tại của xe
+    setEditFormData({
+      model: vehicle.model || '',
+      year: vehicle.year || new Date().getFullYear(),
+      color: vehicle.color || '',
+      warrantyStartDate: vehicle.warrantyStartDate ? vehicle.warrantyStartDate.split('T')[0] : '',
+      warrantyEndDate: vehicle.warrantyEndDate ? vehicle.warrantyEndDate.split('T')[0] : '',
+      vehicleStatus: vehicle.vehicleStatus || 'ACTIVE',
+      odometerKm: vehicle.odometerKm || 0,
+      purchaseDate: vehicle.purchaseDate ? vehicle.purchaseDate.split('T')[0] : ''
+    });
+    
+    setShowEditModal(true);
+    setError(null);
+  };
+
+  // Hàm cập nhật xe
+  const handleUpdateVehicle = async (e) => {
+    if (e) e.preventDefault();
+    if (!editingVehicle) return;
+    
+    setEditLoading(true);
+    
+    try {
+      const updateData = {
+        model: editFormData.model,
+        year: editFormData.year,
+        color: editFormData.color,
+        warrantyStartDate: editFormData.warrantyStartDate,
+        warrantyEndDate: editFormData.warrantyEndDate,
+        vehicleStatus: editFormData.vehicleStatus,
+        odometerKm: editFormData.odometerKm,
+        purchaseDate: editFormData.purchaseDate
+      };
+      
+      console.log('Updating vehicle:', editingVehicle.id, updateData);
+      const response = await api.put(`/v1/vehicles/${editingVehicle.id}`, updateData);
+      
+      if (response.status === 200) {
+        // Cập nhật thành công - refresh danh sách
+        await fetchVehicles();
+        setShowEditModal(false);
+        resetEditForm();
+        setError(null);
+        console.log('Vehicle updated successfully:', response.data);
+      }
+    } catch (err) {
+      console.error('Error updating vehicle:', err);
+      console.error('Error response:', err.response?.data);
+      setError(err.response?.data?.message || 'Không thể cập nhật xe. Vui lòng thử lại.');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -282,9 +388,11 @@ const VehicleManagement = () => {
           </p>
         </div>
         <button 
-          onClick={() => {
+          onClick={async () => {
             setShowAddModal(true);
-            fetchVehicleModels(); // Fetch models when opening modal
+            if (vehicleModels.length === 0) {
+              await fetchVehicleModels(); // Fetch models when opening modal if not already loaded
+            }
           }}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600"
         >
@@ -521,7 +629,10 @@ const VehicleManagement = () => {
                     >
                       <Eye className="h-4 w-4" />
                     </button>
-                    <button className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-md bg-transparent">
+                    <button 
+                      onClick={() => handleEditVehicle(vehicle)}
+                      className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-md bg-transparent"
+                    >
                       <Edit className="h-4 w-4" />
                     </button>
                   </div>
@@ -961,6 +1072,235 @@ const VehicleManagement = () => {
                   onClick={() => {
                     setShowAddModal(false);
                     resetForm();
+                  }}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal edit xe */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Cập nhật thông tin xe {editingVehicle?.vin}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      resetEditForm();
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Error message */}
+                {error && (
+                  <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-md">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                )}
+
+                {/* Form */}
+                <form onSubmit={handleUpdateVehicle}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Thông tin xe */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                        <Car className="h-5 w-5 mr-2 text-blue-500" />
+                        Thông tin xe
+                      </h4>
+                      <div className="space-y-4">
+                        {/* Model */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Model xe <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="model"
+                            value={editFormData.model}
+                            onChange={handleEditInputChange}
+                            required
+                            disabled={modelsLoading}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <option value="">
+                              {modelsLoading ? 'Đang tải models...' : 'Chọn model xe'}
+                            </option>
+                            {vehicleModels.map((model) => (
+                              <option key={model.id} value={model.modelName}>
+                                {model.modelName} ({model.brand} - {model.year})
+                              </option>
+                            ))}
+                          </select>
+                          {modelsLoading && (
+                            <p className="text-xs text-gray-500 mt-1 flex items-center">
+                              <Settings className="h-3 w-3 mr-1 animate-spin" />
+                              Đang tải danh sách models...
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Năm sản xuất */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Năm sản xuất <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="year"
+                            value={editFormData.year}
+                            onChange={handleEditInputChange}
+                            required
+                            min="2020"
+                            max="2030"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+
+                        {/* Màu sắc */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Màu sắc <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            name="color"
+                            value={editFormData.color}
+                            onChange={handleEditInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="Đen"
+                          />
+                        </div>
+
+                        {/* Số km */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Số km đã đi
+                          </label>
+                          <input
+                            type="number"
+                            name="odometerKm"
+                            value={editFormData.odometerKm}
+                            onChange={handleEditInputChange}
+                            min="0"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="0"
+                          />
+                        </div>
+
+                        {/* Trạng thái xe */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Trạng thái xe <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="vehicleStatus"
+                            value={editFormData.vehicleStatus}
+                            onChange={handleEditInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          >
+                            <option value="ACTIVE">Hoạt động</option>
+                            <option value="MAINTENANCE">Bảo dưỡng</option>
+                            <option value="INACTIVE">Không hoạt động</option>
+                            <option value="RECALLED">Triệu hồi</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Thông tin bảo hành và mua */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                        <Calendar className="h-5 w-5 mr-2 text-green-500" />
+                        Thông tin bảo hành
+                      </h4>
+                      <div className="space-y-4">
+                        {/* Ngày bắt đầu bảo hành */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày bắt đầu bảo hành <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="warrantyStartDate"
+                            value={editFormData.warrantyStartDate}
+                            onChange={handleEditInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+
+                        {/* Ngày kết thúc bảo hành */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày kết thúc bảo hành <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="warrantyEndDate"
+                            value={editFormData.warrantyEndDate}
+                            onChange={handleEditInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+
+                        {/* Ngày mua xe */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Ngày mua xe <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            name="purchaseDate"
+                            value={editFormData.purchaseDate}
+                            onChange={handleEditInputChange}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleUpdateVehicle}
+                  disabled={editLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-teal-600 text-base font-medium text-white hover:bg-teal-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  {editLoading && <Settings className="h-4 w-4 mr-2 animate-spin" />}
+                  {editLoading ? 'Đang cập nhật...' : 'Cập nhật xe'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    resetEditForm();
                   }}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
                 >
