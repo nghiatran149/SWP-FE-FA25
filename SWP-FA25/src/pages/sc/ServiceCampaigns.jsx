@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Eye, Edit, Users, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Users, Calendar, AlertTriangle, CheckCircle, Car } from 'lucide-react';
 
 const ServiceCampaigns = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -210,7 +210,7 @@ const ServiceCampaigns = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Users className="h-6 w-6 text-blue-400" />
+                <Car className="h-6 w-6 text-blue-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -274,7 +274,7 @@ const ServiceCampaigns = () => {
                     {campaign.startDate} - {campaign.endDate}
                   </div>
                   <div className="flex items-center text-sm text-gray-500">
-                    <Users className="h-4 w-4 mr-2" />
+                    <Car className="h-4 w-4 mr-2" />
                     {campaign.affectedVehicles.toLocaleString()} xe bị ảnh hưởng
                   </div>
                   <div className="flex items-center text-sm text-gray-500">
