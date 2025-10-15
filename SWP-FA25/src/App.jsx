@@ -17,7 +17,7 @@ import TechnicianManagement from './pages/sc/TechnicianManagement';
 
 // EVM (Electric Vehicle Manufacturer)
 import WarrantyApproval from './pages/evm/WarrantyApproval';
-import PartManagement from './pages/evm/PartManagement';
+import PartWarehouseManagement from './pages/evm/PartWarehouseManagement';
 import SupplyChain from './pages/evm/SupplyChain';
 import Reports from './pages/evm/Reports';
 
@@ -51,7 +51,7 @@ function App() {
               } />
               <Route path="/parts" element={
                 <ProtectedRoute allowedRoles={['EVM_STAFF']}>
-                  <PartManagement />
+                  <PartWarehouseManagement />
                 </ProtectedRoute>
               } />
               <Route path="/warranty-approval" element={

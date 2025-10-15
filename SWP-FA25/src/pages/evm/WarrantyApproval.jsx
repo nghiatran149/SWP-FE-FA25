@@ -30,6 +30,24 @@ const WarrantyApproval = () => {
   const [selectedViewClaim, setSelectedViewClaim] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
 
+  // State cho modal thêm phụ tùng
+  const [showAddPartModal, setShowAddPartModal] = useState(false);
+  const [selectedPartClaim, setSelectedPartClaim] = useState(null);
+  const [partCategory, setPartCategory] = useState('');
+  const [partName, setPartName] = useState('');
+  const [partQuantity, setPartQuantity] = useState(1);
+  const [partNote, setPartNote] = useState('');
+  const [addingPart, setAddingPart] = useState(false);
+  const [addPartError, setAddPartError] = useState(null);
+  
+  // State cho danh sách categories
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  
+  // State cho danh sách part names
+  const [partNames, setPartNames] = useState([]);
+  const [loadingPartNames, setLoadingPartNames] = useState(false);
+
   // Fetch warranty claims từ API
   const fetchWarrantyClaims = async () => {
     try {
@@ -158,6 +176,137 @@ const WarrantyApproval = () => {
     }
   };
 
+  // Fetch categories từ API
+  const fetchCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const response = await fetch('https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api/v1/evm-staff/categories', {
+        method: 'GET',
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách categories');
+      }
+
+      const data = await response.json();
+      setCategories(data);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setAddPartError('Không thể tải danh sách categories');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  // Fetch part names by category từ API
+  const fetchPartNames = async (category) => {
+    if (!category) {
+      setPartNames([]);
+      return;
+    }
+
+    try {
+      setLoadingPartNames(true);
+      const response = await fetch(`https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api/v1/evm-staff/parts/part-names?category=${encodeURIComponent(category)}`, {
+        method: 'GET',
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách part names');
+      }
+
+      const data = await response.json();
+      setPartNames(data);
+    } catch (err) {
+      console.error('Error fetching part names:', err);
+      setAddPartError('Không thể tải danh sách part names');
+      setPartNames([]);
+    } finally {
+      setLoadingPartNames(false);
+    }
+  };
+
+  // Handle thay đổi category
+  const handleCategoryChange = (selectedCategory) => {
+    setPartCategory(selectedCategory);
+    setPartName(''); // Reset part name khi đổi category
+    fetchPartNames(selectedCategory);
+  };
+
+  // Mở modal thêm phụ tùng
+  const handleOpenAddPartModal = (claim) => {
+    setSelectedPartClaim(claim);
+    setShowAddPartModal(true);
+    setPartCategory('');
+    setPartName('');
+    setPartQuantity(1);
+    setPartNote('');
+    setAddPartError(null);
+    setPartNames([]); // Reset part names
+    
+    // Fetch categories khi mở modal
+    if (categories.length === 0) {
+      fetchCategories();
+    }
+  };
+
+  // Đóng modal thêm phụ tùng
+  const handleCloseAddPartModal = () => {
+    setShowAddPartModal(false);
+    setSelectedPartClaim(null);
+    setAddPartError(null);
+  };
+
+  // Gọi API thêm phụ tùng
+  const handleAddPart = async () => {
+    if (!partCategory || !partName || !partQuantity || !selectedPartClaim) {
+      setAddPartError('Vui lòng nhập đầy đủ thông tin.');
+      return;
+    }
+    
+    setAddingPart(true);
+    setAddPartError(null);
+    
+    try {
+      const vin = selectedPartClaim.vehicle?.vin || selectedPartClaim.vehicleVin;
+      const url = `https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api/v1/evm-staff/parts/attach?category=${encodeURIComponent(partCategory)}&partName=${encodeURIComponent(partName)}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          vin: vin,
+          quantity: partQuantity,
+          note: partNote
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Thêm phụ tùng thất bại');
+      }
+
+      const result = await response.json();
+      console.log('Add part result:', result);
+      
+      setShowAddPartModal(false);
+      alert('Thêm phụ tùng thành công!');
+    } catch (err) {
+      console.error('Error adding part:', err);
+      setAddPartError(err.message || 'Có lỗi xảy ra khi thêm phụ tùng');
+    } finally {
+      setAddingPart(false);
+    }
+  };
+
   // Phân loại yêu cầu bảo hành theo status
   const pendingApprovalClaims = warrantyClaims.filter(claim => 
     claim.claimStatus === 'PENDING'
@@ -201,7 +350,7 @@ const WarrantyApproval = () => {
   };
 
   // Component bảng yêu cầu chờ duyệt
-  const PendingApprovalTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, onOpenApproveModal, onOpenRejectModal, onViewClaim }) => (
+  const PendingApprovalTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, onOpenApproveModal, onOpenRejectModal, onViewClaim, onOpenAddPartModal }) => (
     <>
       {/* Title */}
       <div className="mb-4">
@@ -328,6 +477,13 @@ const WarrantyApproval = () => {
                           onClick={() => onViewClaim(claim.id)}
                         >
                           <Eye className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-md bg-transparent"
+                          title="Thêm phụ tùng"
+                          onClick={() => onOpenAddPartModal(claim)}
+                        >
+                          <Plus className="h-4 w-4" />
                         </button>
                         <button 
                           className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent"
@@ -599,6 +755,7 @@ const WarrantyApproval = () => {
               onOpenApproveModal={handleOpenApproveModal}
               onOpenRejectModal={handleOpenRejectModal}
               onViewClaim={handleViewClaim}
+              onOpenAddPartModal={handleOpenAddPartModal}
             />
           </div>
 
@@ -1082,6 +1239,162 @@ const WarrantyApproval = () => {
                   className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:w-auto sm:text-sm"
                 >
                   Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal thêm phụ tùng */}
+      {showAddPartModal && selectedPartClaim && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <Plus className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Thêm phụ tùng
+                    </h3>
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Thêm phụ tùng cho xe VIN: <strong>{selectedPartClaim.vehicle?.vin || selectedPartClaim.vehicleVin}</strong>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form inputs */}
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Danh mục phụ tùng <span className="text-red-500">*</span>
+                    </label>
+                    {loadingCategories ? (
+                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
+                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                        <span className="text-gray-500">Đang tải categories...</span>
+                      </div>
+                    ) : (
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={partCategory}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
+                      >
+                        <option value="">-- Chọn danh mục --</option>
+                        {categories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Tên phụ tùng <span className="text-red-500">*</span>
+                    </label>
+                    {!partCategory ? (
+                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                        Vui lòng chọn danh mục trước
+                      </div>
+                    ) : loadingPartNames ? (
+                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
+                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                        <span className="text-gray-500">Đang tải part names...</span>
+                      </div>
+                    ) : (
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={partName}
+                        onChange={(e) => setPartName(e.target.value)}
+                      >
+                        <option value="">-- Chọn tên phụ tùng --</option>
+                        {partNames.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Số lượng <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={partQuantity}
+                      onChange={(e) => setPartQuantity(Number(e.target.value))}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ghi chú
+                    </label>
+                    <textarea
+                      rows="3"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={partNote}
+                      onChange={(e) => setPartNote(e.target.value)}
+                      placeholder="Ghi chú thêm (tùy chọn)"
+                    />
+                  </div>
+
+                  {/* Error message */}
+                  {addPartError && (
+                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                      <div className="flex">
+                        <AlertCircle className="h-5 w-5 text-red-400" />
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">{addPartError}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleAddPart}
+                  disabled={addingPart}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addingPart ? (
+                    <>
+                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                      Đang thêm...
+                    </>
+                  ) : (
+                    'Thêm phụ tùng'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseAddPartModal}
+                  disabled={addingPart}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Hủy
                 </button>
               </div>
             </div>
