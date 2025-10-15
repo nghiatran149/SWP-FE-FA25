@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Calendar, User, Car, X, Upload, FileText, Loader2 } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Calendar, User, Car, X, Upload, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Image } from 'lucide-react';
 import api from '../../api/api';
 
 const WarrantyClaims = () => {
@@ -15,6 +15,9 @@ const WarrantyClaims = () => {
   const [statusFilterProcessing, setStatusFilterProcessing] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   // Fetch warranty claims từ API
   const fetchWarrantyClaims = async () => {
@@ -163,6 +166,27 @@ const WarrantyClaims = () => {
     }));
   };
 
+  // Hàm xem chi tiết claim
+  const handleViewClaim = async (claimId) => {
+    try {
+      setViewLoading(true);
+      setSelectedClaim(null);
+      setShowViewModal(true);
+      
+      const response = await api.get(`/v1/warranty/claims/${claimId}`);
+      
+      if (response.status === 200) {
+        setSelectedClaim(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching claim details:', err);
+      setError('Không thể tải chi tiết yêu cầu bảo hành.');
+      setShowViewModal(false);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
   // Component con để render bảng yêu cầu gửi sang hãng
   const SentToManufacturerTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title }) => (
     <>
@@ -286,7 +310,10 @@ const WarrantyClaims = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
+                        <button 
+                          onClick={() => handleViewClaim(claim.id)}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                        >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
@@ -433,7 +460,10 @@ const WarrantyClaims = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
+                        <button 
+                          onClick={() => handleViewClaim(claim.id)}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                        >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
@@ -756,6 +786,272 @@ const WarrantyClaims = () => {
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none disabled:opacity-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xem chi tiết yêu cầu bảo hành */}
+      {showViewModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Chi tiết yêu cầu bảo hành
+                    </h3>
+                    {selectedClaim && (
+                      <p className="text-sm text-gray-500">
+                        Mã yêu cầu: {selectedClaim.claimNumber}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowViewModal(false);
+                      setSelectedClaim(null);
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Loading state */}
+                {viewLoading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                    <span className="ml-3 text-gray-600">Đang tải chi tiết...</span>
+                  </div>
+                ) : selectedClaim ? (
+                  <div className="max-h-96 overflow-y-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Thông tin cơ bản */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                          <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                          Thông tin cơ bản
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Mã yêu cầu:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.claimNumber}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Ngày yêu cầu:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.requestDate}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Trạng thái:</span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedClaim.claimStatus)}`}>
+                              {getStatusText(selectedClaim.claimStatus)}
+                            </span>
+                          </div>
+                          {selectedClaim.approvalDate && (
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium text-gray-700">Ngày duyệt:</span>
+                              <span className="text-sm text-gray-900">{selectedClaim.approvalDate}</span>
+                            </div>
+                          )}
+                          {selectedClaim.completionDate && (
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium text-gray-700">Ngày hoàn thành:</span>
+                              <span className="text-sm text-gray-900">{selectedClaim.completionDate}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Thông tin khách hàng */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                          <User className="h-5 w-5 mr-2 text-green-500" />
+                          Thông tin khách hàng
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Tên khách hàng:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.customer?.fullName || selectedClaim.customerName || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Số điện thoại:</span>
+                            <span className="text-sm text-gray-900 flex items-center">
+                              <Phone className="h-3 w-3 mr-1" />
+                              {selectedClaim.customer?.phone || selectedClaim.customerPhone || 'N/A'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Email:</span>
+                            <span className="text-sm text-gray-900 flex items-center">
+                              <Mail className="h-3 w-3 mr-1" />
+                              {selectedClaim.customer?.email || 'N/A'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Thông tin xe */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                          <Car className="h-5 w-5 mr-2 text-purple-500" />
+                          Thông tin xe
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">VIN:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.vehicleVin || selectedClaim.vehicle?.vin || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Model:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.vehicle?.modelName || selectedClaim.vehicleModel || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Năm sản xuất:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.vehicle?.year || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Màu sắc:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.vehicle?.color || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Thông tin phụ tùng */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                          <Shield className="h-5 w-5 mr-2 text-orange-500" />
+                          Thông tin phụ tùng
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Tên phụ tùng:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.partName || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Số serial:</span>
+                            <span className="text-sm text-gray-900">{selectedClaim.partSerialNumber || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mô tả vấn đề và chẩn đoán */}
+                    <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                          <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
+                          Mô tả vấn đề
+                        </h4>
+                        <p className="text-sm text-gray-900">{selectedClaim.issueDescription}</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                          <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                          Báo cáo chẩn đoán
+                        </h4>
+                        <p className="text-sm text-gray-900">{selectedClaim.diagnosisReport}</p>
+                      </div>
+                    </div>
+
+                    {/* Thông tin xử lý */}
+                    {selectedClaim.claimStatus !== 'REJECTED' && (
+                      <div className="mt-6">
+                        {/* Kỹ thuật viên */}
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                            <User className="h-5 w-5 mr-2 text-blue-500" />
+                            Kỹ thuật viên
+                          </h4>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium text-gray-700">Tên:</span>
+                              <span className="text-sm text-gray-900">{selectedClaim.technician?.fullName || selectedClaim.technicianName || 'Chưa phân công'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium text-gray-700">Username:</span>
+                              <span className="text-sm text-gray-900">{selectedClaim.technician?.username || 'N/A'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Ghi chú và lý do */}
+                    {(selectedClaim.approvalNotes || selectedClaim.rejectionReason) && (
+                      <div className="mt-6">
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                            <FileText className="h-5 w-5 mr-2 text-yellow-500" />
+                            Ghi chú và lý do
+                          </h4>
+                          <div className="space-y-3">
+                            {selectedClaim.approvalNotes && (
+                              <div>
+                                <span className="text-sm font-medium text-gray-700">Ghi chú duyệt:</span>
+                                <p className="text-sm text-gray-900 mt-1">{selectedClaim.approvalNotes}</p>
+                              </div>
+                            )}
+                            {selectedClaim.rejectionReason && (
+                              <div>
+                                <span className="text-sm font-medium text-gray-700">Lý do từ chối:</span>
+                                <p className="text-sm text-gray-900 mt-1">{selectedClaim.rejectionReason}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hình ảnh đính kèm */}
+                    {selectedClaim.imageUrls && selectedClaim.imageUrls.length > 0 && (
+                      <div className="mt-6">
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                            <Image className="h-5 w-5 mr-2 text-purple-500" />
+                            Hình ảnh đính kèm
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {selectedClaim.imageUrls.map((imageUrl, index) => (
+                              <div key={index} className="bg-white border rounded-lg p-3 flex items-center space-x-2">
+                                <Image className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm text-gray-900 truncate">{imageUrl}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-500">Không thể tải thông tin yêu cầu bảo hành</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedClaim(null);
+                  }}
+                  className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:w-auto sm:text-sm"
+                >
+                  Đóng
                 </button>
               </div>
             </div>
