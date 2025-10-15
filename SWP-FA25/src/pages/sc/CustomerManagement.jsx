@@ -1046,7 +1046,7 @@ const CustomerManagement = () => {
                         <Phone className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
                         <div>
                           <dt className="text-sm font-medium text-gray-500">Số điện thoại</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.phoneNumber}</dd>
+                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.phone}</dd>
                         </div>
                       </div>
 
@@ -1054,7 +1054,7 @@ const CustomerManagement = () => {
                         <CreditCard className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
                         <div>
                           <dt className="text-sm font-medium text-gray-500">CCCD/CMND</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.idNumber}</dd>
+                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.identityNumber}</dd>
                         </div>
                       </div>
 
@@ -1097,24 +1097,19 @@ const CustomerManagement = () => {
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
                                   <h5 className="text-sm font-medium text-gray-900">
-                                    {vehicle.model} {vehicle.year}
+                                    {vehicle.modelName} ({vehicle.year})
                                   </h5>
                                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    vehicle.warrantyStatus === 'ACTIVE' 
+                                    vehicle.vehicleStatus === 'ACTIVE' 
                                       ? 'bg-green-100 text-green-800' 
-                                      : vehicle.warrantyStatus === 'EXPIRED'
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-yellow-100 text-yellow-800'
+                                      : 'bg-red-100 text-red-800'
                                   }`}>
-                                    {vehicle.warrantyStatus === 'ACTIVE' ? 'Bảo hành' : 
-                                     vehicle.warrantyStatus === 'EXPIRED' ? 'Hết bảo hành' : 'Chờ kích hoạt'}
+                                    {vehicle.vehicleStatus === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'}
                                   </span>
                                 </div>
                                 <p className="text-sm text-gray-600 mt-1">VIN: {vehicle.vin}</p>
-                                <p className="text-sm text-gray-600">Biển số: {vehicle.licensePlate}</p>
-                                <p className="text-sm text-gray-600">
-                                  Bảo hành đến: {vehicle.warrantyEndDate ? formatDate(vehicle.warrantyEndDate) : 'Chưa xác định'}
-                                </p>
+                                <p className="text-sm text-gray-600">Màu sắc: {vehicle.color}</p>
+                                <p className="text-sm text-gray-600">ID xe: {vehicle.id}</p>
                               </div>
                             </div>
                           </div>
