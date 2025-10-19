@@ -54,7 +54,7 @@ const CustomerManagement = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/v1/customers?page=${page}&size=${size}&sort=id,desc`);
+      const response = await api.get(`/customers?page=${page}&size=${size}&sort=id,desc`);
       console.log('API Response:', response.data);
       
       if (response.data && response.data.content) {
@@ -95,7 +95,7 @@ const CustomerManagement = () => {
         updatedAt: new Date().toISOString()
       };
       
-      const response = await api.post('/v1/customers', customerData);
+      const response = await api.post('/customers', customerData);
       
       if (response.status === 201) {
         // Thêm thành công - refresh danh sách
@@ -183,7 +183,7 @@ const CustomerManagement = () => {
         updatedAt: new Date().toISOString()
       };
       
-      const response = await api.put(`/v1/customers/${selectedCustomer.id}`, customerData);
+      const response = await api.put(`/customers/${selectedCustomer.id}`, customerData);
       
       if (response.status === 200) {
         // Cập nhật thành công - refresh danh sách
@@ -207,7 +207,7 @@ const CustomerManagement = () => {
       setToggleLoading(prev => ({ ...prev, [customerId]: true }));
       
       const newStatus = !currentStatus;
-      const response = await api.patch(`/v1/customers/${customerId}/active?isActive=${newStatus}`);
+      const response = await api.patch(`/customers/${customerId}/status?isActive=${newStatus}`);
       
       if (response.status === 200) {
         // Cập nhật state local
@@ -221,6 +221,7 @@ const CustomerManagement = () => {
       }
     } catch (err) {
       console.error('Error toggling customer status:', err);
+      console.error('Error response:', err.response?.data);
       setError('Không thể cập nhật trạng thái khách hàng. Vui lòng thử lại.');
     } finally {
       setToggleLoading(prev => ({ ...prev, [customerId]: false }));
@@ -234,7 +235,7 @@ const CustomerManagement = () => {
       setSelectedViewCustomer(null);
       setShowViewModal(true);
       
-      const response = await api.get(`/v1/customers/${customerId}`);
+      const response = await api.get(`/customers/${customerId}`);
       
       if (response.status === 200) {
         setSelectedViewCustomer(response.data);
