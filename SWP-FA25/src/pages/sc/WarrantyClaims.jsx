@@ -9,18 +9,19 @@ const WarrantyClaims = () => {
   const [error, setError] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // State cho pagination
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  
+
   // State cho tìm kiếm và filter
   const [searchTermSentToManufacturer, setSearchTermSentToManufacturer] = useState('');
   const [statusFilterSentToManufacturer, setStatusFilterSentToManufacturer] = useState('all');
   const [searchTermProcessing, setSearchTermProcessing] = useState('');
   const [statusFilterProcessing, setStatusFilterProcessing] = useState('all');
+  const [processingTypeFilter, setProcessingTypeFilter] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddSelfServiceModal, setShowAddSelfServiceModal] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
@@ -28,6 +29,20 @@ const WarrantyClaims = () => {
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
   
+  // State cho modal phân công công việc
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [selectedClaimForAssign, setSelectedClaimForAssign] = useState(null);
+  const [availableTechnicians, setAvailableTechnicians] = useState([]);
+  const [assignFormData, setAssignFormData] = useState({
+    assignedToId: '',
+    dueDate: '',
+    priority: 'MEDIUM',
+    workDescription: '',
+    notes: '',
+    estimatedHours: ''
+  });
+
   // State cho parts (cho modal tạo yêu cầu cho hãng)
   const [availableParts, setAvailableParts] = useState([]);
   const [partsLoading, setPartsLoading] = useState(false);
@@ -51,7 +66,7 @@ const WarrantyClaims = () => {
       setError(null);
       const response = await api.get(`/warranty/claims?page=${page}&size=${size}`);
       console.log('API Response:', response.data);
-      
+
       if (response.data && response.data.content && Array.isArray(response.data.content)) {
         setWarrantyClaims(response.data.content);
         setCurrentPage(response.data.page);
@@ -119,7 +134,7 @@ const WarrantyClaims = () => {
       fetchAvailablePartsSelf();
     }
   }, [showAddSelfServiceModal]);
-  
+
   // Form state cho modal tạo yêu cầu bảo hành
   const [formData, setFormData] = useState({
     vin: '',
@@ -142,13 +157,14 @@ const WarrantyClaims = () => {
   });
 
   // Phân loại yêu cầu bảo hành theo status
-  const sentToManufacturerClaims = warrantyClaims.filter(claim => 
+  const sentToManufacturerClaims = warrantyClaims.filter(claim =>
     claim.claimStatus === 'PENDING' || claim.claimStatus === 'REJECTED'
   );
 
-  const processingClaims = warrantyClaims.filter(claim => 
-    claim.claimStatus === 'APPROVED' || 
-    claim.claimStatus === 'PROCESSING' || 
+  const processingClaims = warrantyClaims.filter(claim =>
+    claim.claimStatus === 'APPROVED' ||
+    claim.claimStatus === 'PROCESSING' ||
+    claim.claimStatus === 'PROCESS' ||
     claim.claimStatus === 'COMPLETED'
   );
 
@@ -156,14 +172,14 @@ const WarrantyClaims = () => {
     switch (status) {
       case 'COMPLETED':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'PROCESSING':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'APPROVED':
+      case 'PROCESS':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'APPROVED':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'REJECTED':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'PENDING':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -174,6 +190,7 @@ const WarrantyClaims = () => {
       case 'COMPLETED':
         return 'Hoàn thành';
       case 'PROCESSING':
+      case 'PROCESS':
         return 'Đang xử lý';
       case 'APPROVED':
         return 'Chờ phân công';
@@ -202,9 +219,9 @@ const WarrantyClaims = () => {
   const getProcessingTypeColor = (type) => {
     switch (type) {
       case 'MANUFACTURER_APPROVAL':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'SELF_SERVICE':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'AUTO_APPROVED':
         return 'bg-purple-100 text-purple-800 border-purple-200';
       default:
@@ -272,11 +289,10 @@ const WarrantyClaims = () => {
               <button
                 key={index}
                 onClick={() => handlePageChange(index)}
-                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                  currentPage === index
+                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === index
                     ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                     : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 {index + 1}
               </button>
@@ -298,7 +314,7 @@ const WarrantyClaims = () => {
   const handleAddWarrantyClaim = async (e) => {
     if (e) e.preventDefault();
     setAddLoading(true);
-    
+
     try {
       const claimData = {
         vin: formData.vin,
@@ -308,9 +324,9 @@ const WarrantyClaims = () => {
         imageUrls: formData.imageUrls,
         partModelQuantities: formData.partModelQuantities
       };
-      
+
       const response = await api.post('/warranty/claims', claimData);
-      
+
       if (response.status === 201) {
         // Thêm thành công - refresh danh sách
         await fetchWarrantyClaims();
@@ -375,7 +391,7 @@ const WarrantyClaims = () => {
       alert('Vui lòng chọn phụ tùng');
       return;
     }
-    
+
     if (partQuantity <= 0) {
       alert('Số lượng phải lớn hơn 0');
       return;
@@ -386,7 +402,7 @@ const WarrantyClaims = () => {
       alert('Phụ tùng này đã được thêm. Vui lòng chọn phụ tùng khác hoặc cập nhật số lượng.');
       return;
     }
-    
+
     setFormData(prev => ({
       ...prev,
       partModelQuantities: {
@@ -414,7 +430,7 @@ const WarrantyClaims = () => {
   const handleUpdatePartQuantity = (partModelId, newQuantity) => {
     const quantityNum = parseInt(newQuantity);
     if (isNaN(quantityNum) || quantityNum <= 0) return;
-    
+
     setFormData(prev => ({
       ...prev,
       partModelQuantities: {
@@ -428,7 +444,7 @@ const WarrantyClaims = () => {
   const handleAddSelfServiceClaim = async (e) => {
     if (e) e.preventDefault();
     setAddLoading(true);
-    
+
     try {
       const claimData = {
         vin: formDataSelf.vin,
@@ -439,9 +455,9 @@ const WarrantyClaims = () => {
         partModelQuantities: formDataSelf.partModelQuantities,
         selfServiceReason: formDataSelf.selfServiceReason
       };
-      
+
       const response = await api.post('/warranty/claims/self-service', claimData);
-      
+
       if (response.status === 201) {
         await fetchWarrantyClaims();
         setShowAddSelfServiceModal(false);
@@ -449,16 +465,16 @@ const WarrantyClaims = () => {
       }
     } catch (err) {
       console.error('Error adding self-service claim:', err);
-      
+
       // Đóng modal form trước
       setShowAddSelfServiceModal(false);
-      
+
       // Xử lý lỗi chi tiết từ server và hiển thị modal lỗi
       let errorMsg = '';
-      
+
       if (err.response?.data?.message) {
         const serverMessage = err.response.data.message;
-        
+
         // Check if it's an inventory error
         if (serverMessage.includes('Insufficient quantity')) {
           // Parse error message to extract details
@@ -477,7 +493,7 @@ const WarrantyClaims = () => {
       } else {
         errorMsg = 'Không thể tạo yêu cầu tự xử lí. Vui lòng kiểm tra lại thông tin.';
       }
-      
+
       // Hiển thị modal lỗi
       setErrorMessage(errorMsg);
       setShowErrorModal(true);
@@ -531,7 +547,7 @@ const WarrantyClaims = () => {
       alert('Vui lòng chọn phụ tùng');
       return;
     }
-    
+
     if (partQuantitySelf <= 0) {
       alert('Số lượng phải lớn hơn 0');
       return;
@@ -542,7 +558,7 @@ const WarrantyClaims = () => {
       alert('Phụ tùng này đã được thêm. Vui lòng chọn phụ tùng khác hoặc cập nhật số lượng.');
       return;
     }
-    
+
     setFormDataSelf(prev => ({
       ...prev,
       partModelQuantities: {
@@ -570,7 +586,7 @@ const WarrantyClaims = () => {
   const handleUpdatePartQuantitySelf = (partModelId, newQuantity) => {
     const quantityNum = parseInt(newQuantity);
     if (isNaN(quantityNum) || quantityNum <= 0) return;
-    
+
     setFormDataSelf(prev => ({
       ...prev,
       partModelQuantities: {
@@ -586,9 +602,9 @@ const WarrantyClaims = () => {
       setViewLoading(true);
       setSelectedClaim(null);
       setShowViewModal(true);
-      
+
       const response = await api.get(`/warranty/claims/${claimId}`);
-      
+
       if (response.status === 200) {
         setSelectedClaim(response.data);
       }
@@ -601,14 +617,89 @@ const WarrantyClaims = () => {
     }
   };
 
+  // Hàm mở modal phân công
+  const handleOpenAssignModal = async (claim) => {
+    setSelectedClaimForAssign(claim);
+    setShowAssignModal(true);
+    
+    // Fetch danh sách technicians có sẵn
+    try {
+      const response = await api.get('/assignments/technicians/available');
+      if (response.status === 200 && Array.isArray(response.data)) {
+        setAvailableTechnicians(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching technicians:', err);
+      setError('Không thể tải danh sách kỹ thuật viên.');
+    }
+  };
+
+  // Hàm phân công công việc
+  const handleAssignWork = async (e) => {
+    if (e) e.preventDefault();
+    setAssignLoading(true);
+
+    try {
+      const assignData = {
+        warrantyClaimId: selectedClaimForAssign.id,
+        assignedToId: assignFormData.assignedToId,
+        dueDate: assignFormData.dueDate,
+        priority: assignFormData.priority,
+        workDescription: assignFormData.workDescription,
+        notes: assignFormData.notes,
+        estimatedHours: parseInt(assignFormData.estimatedHours)
+      };
+
+      const response = await api.post(`/warranty/claims/${selectedClaimForAssign.id}/assign`, assignData);
+
+      if (response.status === 201 || response.status === 200) {
+        await fetchWarrantyClaims();
+        setShowAssignModal(false);
+        resetAssignForm();
+      }
+    } catch (err) {
+      console.error('Error assigning work:', err);
+      if (err.response?.data?.message) {
+        setErrorMessage(err.response.data.message);
+      } else {
+        setErrorMessage('Không thể phân công công việc. Vui lòng thử lại.');
+      }
+      setShowErrorModal(true);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  // Reset form phân công
+  const resetAssignForm = () => {
+    setAssignFormData({
+      assignedToId: '',
+      dueDate: '',
+      priority: 'MEDIUM',
+      workDescription: '',
+      notes: '',
+      estimatedHours: ''
+    });
+    setSelectedClaimForAssign(null);
+  };
+
+  // Xử lý thay đổi input form phân công
+  const handleAssignInputChange = (e) => {
+    const { name, value } = e.target;
+    setAssignFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   // Component con để render bảng yêu cầu gửi sang hãng
   const SentToManufacturerTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, setShowAddModal }) => (
     <>
       {/* Title */}
       <div className="mb-4 flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-        <button 
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600"
+        <button
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600"
           onClick={() => setShowAddModal(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -758,15 +849,15 @@ const WarrantyClaims = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button 
+                        <button
                           onClick={() => handleViewClaim(claim.id)}
                           className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                        {/* <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
                           <Edit className="h-4 w-4" />
-                        </button>
+                        </button> */}
                       </div>
                     </td>
                   </tr>
@@ -783,13 +874,13 @@ const WarrantyClaims = () => {
   );
 
   // Component con để render bảng yêu cầu đang xử lí
-  const ProcessingClaimsTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, setShowAddSelfServiceModal }) => (
+  const ProcessingClaimsTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, processingTypeFilter, setProcessingTypeFilter, title, setShowAddSelfServiceModal }) => (
     <>
       {/* Title */}
       <div className="mb-4 flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-        <button 
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600"
+        <button
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600"
           onClick={() => setShowAddSelfServiceModal(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -820,8 +911,17 @@ const WarrantyClaims = () => {
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="APPROVED">Chờ phân công</option>
-              <option value="PROCESSING">Đang xử lý</option>
+              <option value="PROCESS">Đang xử lý</option>
               <option value="COMPLETED">Hoàn thành</option>
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              value={processingTypeFilter}
+              onChange={(e) => setProcessingTypeFilter(e.target.value)}
+            >
+              <option value="all">Tất cả loại</option>
+              <option value="MANUFACTURER_APPROVAL">Hãng duyệt</option>
+              <option value="SELF_SERVICE">Tự xử lí</option>
             </select>
           </div>
         </div>
@@ -914,15 +1014,24 @@ const WarrantyClaims = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button 
+                        <button
                           onClick={() => handleViewClaim(claim.id)}
                           className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                        {/* <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
                           <Edit className="h-4 w-4" />
-                        </button>
+                        </button> */}
+                        {claim.claimStatus === 'APPROVED' && (
+                          <button 
+                            onClick={() => handleOpenAssignModal(claim)}
+                            className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-md bg-transparent"
+                            title="Phân công kỹ thuật viên"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -939,27 +1048,29 @@ const WarrantyClaims = () => {
   );
 
   const filteredSentToManufacturerClaims = sentToManufacturerClaims.filter((claim) => {
-    const matchesSearch = 
+    const matchesSearch =
       claim.claimNumber?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
       claim.customer?.fullName?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
       claim.vehicleVin?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
       claim.vehicle?.vin?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase());
-    
+
     const matchesStatus = statusFilterSentToManufacturer === 'all' || claim.claimStatus === statusFilterSentToManufacturer;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const filteredProcessingClaims = processingClaims.filter((claim) => {
-    const matchesSearch = 
+    const matchesSearch =
       claim.claimNumber?.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
       claim.customer?.fullName?.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
       claim.vehicleVin?.toLowerCase().includes(searchTermProcessing.toLowerCase()) ||
       claim.vehicle?.vin?.toLowerCase().includes(searchTermProcessing.toLowerCase());
-    
+
     const matchesStatus = statusFilterProcessing === 'all' || claim.claimStatus === statusFilterProcessing;
     
-    return matchesSearch && matchesStatus;
+    const matchesProcessingType = processingTypeFilter === 'all' || claim.processingType === processingTypeFilter;
+
+    return matchesSearch && matchesStatus && matchesProcessingType;
   });
 
   return (
@@ -1005,7 +1116,7 @@ const WarrantyClaims = () => {
         <>
           {/* Yêu cầu gửi sang hãng */}
           <div className="space-y-6">
-            <SentToManufacturerTable 
+            <SentToManufacturerTable
               claims={filteredSentToManufacturerClaims}
               searchTerm={searchTermSentToManufacturer}
               setSearchTerm={setSearchTermSentToManufacturer}
@@ -1018,12 +1129,14 @@ const WarrantyClaims = () => {
 
           {/* Yêu cầu đang xử lí */}
           <div className="space-y-6">
-            <ProcessingClaimsTable 
+            <ProcessingClaimsTable
               claims={filteredProcessingClaims}
               searchTerm={searchTermProcessing}
               setSearchTerm={setSearchTermProcessing}
               statusFilter={statusFilterProcessing}
               setStatusFilter={setStatusFilterProcessing}
+              processingTypeFilter={processingTypeFilter}
+              setProcessingTypeFilter={setProcessingTypeFilter}
               title="Yêu cầu đang xử lí"
               setShowAddSelfServiceModal={setShowAddSelfServiceModal}
             />
@@ -1158,7 +1271,7 @@ const WarrantyClaims = () => {
                         <Shield className="h-5 w-5 mr-2 text-blue-500" />
                         Phụ tùng yêu cầu
                       </h4>
-                      
+
                       {/* Dropdown thêm phụ tùng */}
                       <div className="mb-4 bg-white rounded-lg p-3 border border-gray-300">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -1195,8 +1308,8 @@ const WarrantyClaims = () => {
                               </option>
                               {availableParts
                                 .filter(part => partCategoryFilter === 'all' || part.category === partCategoryFilter)
-                                .filter(part => 
-                                  partSearchTerm === '' || 
+                                .filter(part =>
+                                  partSearchTerm === '' ||
                                   part.partName.toLowerCase().includes(partSearchTerm.toLowerCase()) ||
                                   part.partModelId.toLowerCase().includes(partSearchTerm.toLowerCase())
                                 )
@@ -1234,7 +1347,7 @@ const WarrantyClaims = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Danh sách phụ tùng đã thêm */}
                       {Object.keys(formData.partModelQuantities).length === 0 ? (
                         <p className="text-sm text-gray-500 text-center py-3 bg-white rounded-md border border-dashed border-gray-300">
@@ -1832,7 +1945,7 @@ const WarrantyClaims = () => {
                         <Shield className="h-5 w-5 mr-2 text-blue-500" />
                         Phụ tùng yêu cầu
                       </h4>
-                      
+
                       {/* Dropdown thêm phụ tùng */}
                       <div className="mb-4 bg-white rounded-lg p-3 border border-gray-300">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -1869,8 +1982,8 @@ const WarrantyClaims = () => {
                               </option>
                               {availablePartsSelf
                                 .filter(part => partCategoryFilterSelf === 'all' || part.category === partCategoryFilterSelf)
-                                .filter(part => 
-                                  partSearchTermSelf === '' || 
+                                .filter(part =>
+                                  partSearchTermSelf === '' ||
                                   part.partName.toLowerCase().includes(partSearchTermSelf.toLowerCase()) ||
                                   part.partModelId.toLowerCase().includes(partSearchTermSelf.toLowerCase())
                                 )
@@ -1908,7 +2021,7 @@ const WarrantyClaims = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Danh sách phụ tùng đã thêm */}
                       {Object.keys(formDataSelf.partModelQuantities).length === 0 ? (
                         <p className="text-sm text-gray-500 text-center py-3 bg-white rounded-md border border-dashed border-gray-300">
@@ -2038,6 +2151,176 @@ const WarrantyClaims = () => {
                   Hủy
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal phân công công việc */}
+      {showAssignModal && selectedClaimForAssign && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <form onSubmit={handleAssignWork}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  {/* Header */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                        Phân công công việc
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Yêu cầu #{selectedClaimForAssign.id}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAssignModal(false);
+                        resetAssignForm();
+                      }}
+                      className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  {/* Form */}
+                  <div className="space-y-4">
+                    {/* Kỹ thuật viên */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Kỹ thuật viên <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="assignedToId"
+                        value={assignFormData.assignedToId}
+                        onChange={handleAssignInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">-- Chọn kỹ thuật viên --</option>
+                        {availableTechnicians.map(tech => (
+                          <option key={tech.id} value={tech.id}>
+                            {tech.fullName} - {tech.username}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Ngày hết hạn và Độ ưu tiên */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Ngày hết hạn <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="dueDate"
+                          value={assignFormData.dueDate}
+                          onChange={handleAssignInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Độ ưu tiên <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="priority"
+                          value={assignFormData.priority}
+                          onChange={handleAssignInputChange}
+                          required
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="LOW">Thấp</option>
+                          <option value="MEDIUM">Trung bình</option>
+                          <option value="HIGH">Cao</option>
+                          <option value="URGENT">Khẩn cấp</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Giờ ước tính */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Số giờ ước tính <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="estimatedHours"
+                        value={assignFormData.estimatedHours}
+                        onChange={handleAssignInputChange}
+                        required
+                        min="1"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Nhập số giờ (VD: 24)"
+                      />
+                    </div>
+
+                    {/* Mô tả công việc */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Mô tả công việc <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        name="workDescription"
+                        value={assignFormData.workDescription}
+                        onChange={handleAssignInputChange}
+                        required
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Mô tả chi tiết công việc cần thực hiện..."
+                      />
+                    </div>
+
+                    {/* Ghi chú */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ghi chú
+                      </label>
+                      <textarea
+                        name="notes"
+                        value={assignFormData.notes}
+                        onChange={handleAssignInputChange}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Thêm ghi chú nếu cần..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer buttons */}
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="submit"
+                    disabled={assignLoading}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    {assignLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {assignLoading ? 'Đang phân công...' : 'Phân công'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAssignModal(false);
+                      resetAssignForm();
+                    }}
+                    disabled={assignLoading}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none disabled:opacity-50 sm:mt-0 sm:w-auto sm:text-sm"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

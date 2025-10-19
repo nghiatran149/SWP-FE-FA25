@@ -180,6 +180,7 @@ const WarrantyApproval = () => {
     (claim.claimStatus === 'REJECTED' || 
     claim.claimStatus === 'APPROVED' || 
     claim.claimStatus === 'PROCESSING' || 
+    claim.claimStatus === 'PROCESS' || 
     claim.claimStatus === 'COMPLETED') &&
     claim.processingType !== 'SELF_SERVICE'
   );
@@ -188,6 +189,7 @@ const WarrantyApproval = () => {
     switch (status) {
       case 'COMPLETED':
       case 'PROCESSING':
+      case 'PROCESS':
       case 'APPROVED':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'REJECTED':
@@ -203,6 +205,7 @@ const WarrantyApproval = () => {
     switch (status) {
       case 'COMPLETED':
       case 'PROCESSING':
+      case 'PROCESS':
       case 'APPROVED':
         return 'Đã chấp nhận';
       case 'REJECTED':
