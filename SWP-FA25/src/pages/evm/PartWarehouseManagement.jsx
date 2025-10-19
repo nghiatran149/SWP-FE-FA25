@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Eye, Edit, Package, AlertTriangle, TrendingDown, TrendingUp, Loader2 } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Package, AlertTriangle, TrendingDown, TrendingUp, Loader2, Wrench, Warehouse} from 'lucide-react';
 import api from '../../api/api';
 
 const PartWarehouseManagement = () => {
@@ -17,7 +17,7 @@ const PartWarehouseManagement = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/v1/evm-staff/parts/warehouse-manufacturer');
+      const response = await api.get('/evm/parts/warehouse');
       console.log('API Response:', response.data);
       
       if (Array.isArray(response.data)) {
@@ -49,9 +49,9 @@ const PartWarehouseManagement = () => {
   // Trạng thái mới dựa trên API
   const statuses = [
     { value: 'all', label: 'Tất cả trạng thái' },
-    { value: 'IN_STOCK', label: 'Còn hàng' },
+    { value: 'IN_STOCK', label: 'Trong kho' },
     { value: 'DEFECTIVE', label: 'Lỗi' },
-    { value: 'OUT_OF_STOCK', label: 'Hết hàng' },
+    { value: 'INSTALLED', label: 'Đã lắp đặt' },
   ];
 
   const getStatusColor = (status) => {
@@ -70,11 +70,11 @@ const PartWarehouseManagement = () => {
   const getStatusText = (status) => {
     switch (status) {
       case 'IN_STOCK':
-        return 'Còn hàng';
+        return 'Trong kho';
       case 'DEFECTIVE':
         return 'Lỗi';
-      case 'OUT_OF_STOCK':
-        return 'Hết hàng';
+      case 'INSTALLED':
+        return 'Đã lắp đặt';
       default:
         return status;
     }
@@ -138,11 +138,11 @@ const PartWarehouseManagement = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <TrendingUp className="h-6 w-6 text-green-400" />
+                <Warehouse className="h-6 w-6 text-green-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Còn hàng</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Trong kho</dt>
                   <dd className="text-2xl font-semibold text-gray-900">{stockStats.inStock}</dd>
                 </dl>
               </div>
@@ -170,11 +170,11 @@ const PartWarehouseManagement = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <TrendingDown className="h-6 w-6 text-gray-400" />
+                <Wrench className="h-6 w-6 text-orange-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Hết hàng</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Đã lắp đặt</dt>
                   <dd className="text-2xl font-semibold text-gray-900">{stockStats.outOfStock}</dd>
                 </dl>
               </div>

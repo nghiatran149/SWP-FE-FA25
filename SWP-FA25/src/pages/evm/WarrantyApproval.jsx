@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Calendar, User, Car, Check, X, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Image } from 'lucide-react';
+import { Search, Plus, Eye, Calendar, User, Car, Check, X, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Image, UserPlus, Wrench } from 'lucide-react';
 import api from '../../api/api';
 
 const WarrantyApproval = () => {
@@ -36,24 +36,6 @@ const WarrantyApproval = () => {
   const [selectedViewClaim, setSelectedViewClaim] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
 
-  // State cho modal thêm phụ tùng
-  const [showAddPartModal, setShowAddPartModal] = useState(false);
-  const [selectedPartClaim, setSelectedPartClaim] = useState(null);
-  const [partCategory, setPartCategory] = useState('');
-  const [partName, setPartName] = useState('');
-  const [partQuantity, setPartQuantity] = useState(1);
-  const [partNote, setPartNote] = useState('');
-  const [addingPart, setAddingPart] = useState(false);
-  const [addPartError, setAddPartError] = useState(null);
-  
-  // State cho danh sách categories
-  const [categories, setCategories] = useState([]);
-  const [loadingCategories, setLoadingCategories] = useState(false);
-  
-  // State cho danh sách part names
-  const [partNames, setPartNames] = useState([]);
-  const [loadingPartNames, setLoadingPartNames] = useState(false);
-
   // Fetch warranty claims từ API
   const fetchWarrantyClaims = async (page = 0, size = 10) => {
     try {
@@ -68,6 +50,9 @@ const WarrantyApproval = () => {
         setPageSize(response.data.size);
         setTotalPages(response.data.totalPages);
         setTotalElements(response.data.totalElements);
+      } else if (response.data && Array.isArray(response.data)) {
+        // Fallback for direct array response
+        setWarrantyClaims(response.data);
       } else {
         console.warn('API response is not in expected format:', response.data);
         setWarrantyClaims([]);
@@ -98,7 +83,7 @@ const WarrantyApproval = () => {
 
     try {
       setApproving(true);
-      const response = await api.put(`/v1/warranty/claims/${selectedClaim.id}/approve`, {
+      const response = await api.put(`/warranty/claims/${selectedClaim.id}/approve`, {
         approvalNotes: approvalNotes || 'Đã phê duyệt'
       });
 
@@ -138,7 +123,7 @@ const WarrantyApproval = () => {
 
     try {
       setRejecting(true);
-      const response = await api.put(`/v1/warranty/claims/${selectedClaim.id}/reject`, {
+      const response = await api.put(`/warranty/claims/${selectedClaim.id}/reject`, {
         rejectionReason: rejectionReason || 'Đã từ chối'
       });
 
@@ -172,7 +157,7 @@ const WarrantyApproval = () => {
       setSelectedViewClaim(null);
       setShowViewModal(true);
       
-      const response = await api.get(`/v1/warranty/claims/${claimId}`);
+      const response = await api.get(`/warranty/claims/${claimId}`);
       
       if (response.status === 200) {
         setSelectedViewClaim(response.data);
@@ -186,147 +171,17 @@ const WarrantyApproval = () => {
     }
   };
 
-  // Fetch categories từ API
-  const fetchCategories = async () => {
-    try {
-      setLoadingCategories(true);
-      const response = await fetch('https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api/v1/evm-staff/categories', {
-        method: 'GET',
-        headers: {
-          'ngrok-skip-browser-warning': 'true'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Không thể tải danh sách categories');
-      }
-
-      const data = await response.json();
-      setCategories(data);
-    } catch (err) {
-      console.error('Error fetching categories:', err);
-      setAddPartError('Không thể tải danh sách categories');
-    } finally {
-      setLoadingCategories(false);
-    }
-  };
-
-  // Fetch part names by category từ API
-  const fetchPartNames = async (category) => {
-    if (!category) {
-      setPartNames([]);
-      return;
-    }
-
-    try {
-      setLoadingPartNames(true);
-      const response = await fetch(`https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api/v1/evm-staff/parts/part-names?category=${encodeURIComponent(category)}`, {
-        method: 'GET',
-        headers: {
-          'ngrok-skip-browser-warning': 'true'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Không thể tải danh sách part names');
-      }
-
-      const data = await response.json();
-      setPartNames(data);
-    } catch (err) {
-      console.error('Error fetching part names:', err);
-      setAddPartError('Không thể tải danh sách part names');
-      setPartNames([]);
-    } finally {
-      setLoadingPartNames(false);
-    }
-  };
-
-  // Handle thay đổi category
-  const handleCategoryChange = (selectedCategory) => {
-    setPartCategory(selectedCategory);
-    setPartName(''); // Reset part name khi đổi category
-    fetchPartNames(selectedCategory);
-  };
-
-  // Mở modal thêm phụ tùng
-  const handleOpenAddPartModal = (claim) => {
-    setSelectedPartClaim(claim);
-    setShowAddPartModal(true);
-    setPartCategory('');
-    setPartName('');
-    setPartQuantity(1);
-    setPartNote('');
-    setAddPartError(null);
-    setPartNames([]); // Reset part names
-    
-    // Fetch categories khi mở modal
-    if (categories.length === 0) {
-      fetchCategories();
-    }
-  };
-
-  // Đóng modal thêm phụ tùng
-  const handleCloseAddPartModal = () => {
-    setShowAddPartModal(false);
-    setSelectedPartClaim(null);
-    setAddPartError(null);
-  };
-
-  // Gọi API thêm phụ tùng
-  const handleAddPart = async () => {
-    if (!partCategory || !partName || !partQuantity || !selectedPartClaim) {
-      setAddPartError('Vui lòng nhập đầy đủ thông tin.');
-      return;
-    }
-    
-    setAddingPart(true);
-    setAddPartError(null);
-    
-    try {
-      const vin = selectedPartClaim.vehicle?.vin || selectedPartClaim.vehicleVin;
-      const url = `https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api/v1/evm-staff/parts/attach?category=${encodeURIComponent(partCategory)}&partName=${encodeURIComponent(partName)}`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: JSON.stringify({
-          vin: vin,
-          quantity: partQuantity,
-          note: partNote
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Thêm phụ tùng thất bại');
-      }
-
-      const result = await response.json();
-      console.log('Add part result:', result);
-      
-      setShowAddPartModal(false);
-      alert('Thêm phụ tùng thành công!');
-    } catch (err) {
-      console.error('Error adding part:', err);
-      setAddPartError(err.message || 'Có lỗi xảy ra khi thêm phụ tùng');
-    } finally {
-      setAddingPart(false);
-    }
-  };
-
-  // Phân loại yêu cầu bảo hành theo status
+  // Phân loại yêu cầu bảo hành theo status (ẩn SELF_SERVICE)
   const pendingApprovalClaims = warrantyClaims.filter(claim => 
-    claim.claimStatus === 'PENDING'
+    claim.claimStatus === 'PENDING' && claim.processingType !== 'SELF_SERVICE'
   );
 
   const processedClaims = warrantyClaims.filter(claim => 
-    claim.claimStatus === 'REJECTED' || 
+    (claim.claimStatus === 'REJECTED' || 
     claim.claimStatus === 'APPROVED' || 
     claim.claimStatus === 'PROCESSING' || 
-    claim.claimStatus === 'COMPLETED'
+    claim.claimStatus === 'COMPLETED') &&
+    claim.processingType !== 'SELF_SERVICE'
   );
 
   const getStatusColor = (status) => {
@@ -403,7 +258,7 @@ const WarrantyApproval = () => {
             <option value={5}>5 / trang</option>
             <option value={10}>10 / trang</option>
             <option value={20}>20 / trang</option>
-            <option value={50}>50 / trang</option>
+            {/* <option value={50}>50 / trang</option> */}
           </select>
         </div>
         <div>
@@ -442,7 +297,7 @@ const WarrantyApproval = () => {
   );
 
   // Component bảng yêu cầu chờ duyệt
-  const PendingApprovalTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, onOpenApproveModal, onOpenRejectModal, onViewClaim, onOpenAddPartModal }) => (
+  const PendingApprovalTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, onOpenApproveModal, onOpenRejectModal, onViewClaim }) => (
     <>
       {/* Title */}
       <div className="mb-4">
@@ -497,16 +352,13 @@ const WarrantyApproval = () => {
                     Khách hàng
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ngày tạo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Xe
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Vấn đề
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Báo cáo chẩn đoán
+                    Phụ tùng yêu cầu
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Trạng thái
@@ -519,8 +371,12 @@ const WarrantyApproval = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {claims.map((claim) => (
                   <tr key={claim.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {claim.claimNumber}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{claim.id}</div>
+                      <div className="flex items-center text-sm text-gray-500 mt-1">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {claim.requestDate}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -529,12 +385,6 @@ const WarrantyApproval = () => {
                           <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
                           <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {claim.requestDate}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -551,10 +401,34 @@ const WarrantyApproval = () => {
                         {claim.issueDescription}
                       </div>
                     </td>
-                    <td className="px-6 py-4 max-w-48">
-                      <div className="text-sm text-gray-900 break-words" title={claim.diagnosisReport}>
-                        {claim.diagnosisReport || 'N/A'}
-                      </div>
+                    <td className="px-6 py-4">
+                      {claim.items && claim.items.length > 0 ? (
+                        <div className="text-sm text-gray-900">
+                          {claim.items.length === 1 ? (
+                            <div title={`${claim.items[0].partName} (SL: ${claim.items[0].quantity})`}>
+                              {claim.items[0].partName} (x{claim.items[0].quantity})
+                            </div>
+                          ) : (
+                            <div className="group relative">
+                              <div className="truncate max-w-xs cursor-help">
+                                {claim.items[0].partName} và {claim.items.length - 1} phụ tùng khác
+                              </div>
+                              <div className="hidden group-hover:block absolute z-10 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg -top-2 left-0 transform -translate-y-full w-64">
+                                <div className="space-y-1">
+                                  {claim.items.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between">
+                                      <span>{item.partName}</span>
+                                      <span className="ml-2">x{item.quantity}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Chưa có</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
@@ -569,13 +443,6 @@ const WarrantyApproval = () => {
                           onClick={() => onViewClaim(claim.id)}
                         >
                           <Eye className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-md bg-transparent"
-                          title="Thêm phụ tùng"
-                          onClick={() => onOpenAddPartModal(claim)}
-                        >
-                          <Plus className="h-4 w-4" />
                         </button>
                         <button 
                           className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent"
@@ -663,16 +530,13 @@ const WarrantyApproval = () => {
                     Khách hàng
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ngày tạo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Xe
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Vấn đề
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Báo cáo chẩn đoán
+                    Phụ tùng yêu cầu
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Trạng thái
@@ -688,8 +552,12 @@ const WarrantyApproval = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {claims.map((claim) => (
                   <tr key={claim.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {claim.claimNumber}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{claim.id}</div>
+                      <div className="flex items-center text-sm text-gray-500 mt-1">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {claim.requestDate}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -698,12 +566,6 @@ const WarrantyApproval = () => {
                           <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
                           <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        {claim.requestDate}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -720,10 +582,34 @@ const WarrantyApproval = () => {
                         {claim.issueDescription}
                       </div>
                     </td>
-                    <td className="px-6 py-4 max-w-48">
-                      <div className="text-sm text-gray-900 break-words" title={claim.diagnosisReport}>
-                        {claim.diagnosisReport || 'N/A'}
-                      </div>
+                    <td className="px-6 py-4">
+                      {claim.items && claim.items.length > 0 ? (
+                        <div className="text-sm text-gray-900">
+                          {claim.items.length === 1 ? (
+                            <div title={`${claim.items[0].partName} (SL: ${claim.items[0].quantity})`}>
+                              {claim.items[0].partName} (x{claim.items[0].quantity})
+                            </div>
+                          ) : (
+                            <div className="group relative">
+                              <div className="truncate max-w-xs cursor-help">
+                                {claim.items[0].partName} và {claim.items.length - 1} phụ tùng khác
+                              </div>
+                              <div className="hidden group-hover:block absolute z-10 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg -top-2 left-0 transform -translate-y-full w-64">
+                                <div className="space-y-1">
+                                  {claim.items.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between">
+                                      <span>{item.partName}</span>
+                                      <span className="ml-2">x{item.quantity}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Chưa có</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
@@ -762,7 +648,7 @@ const WarrantyApproval = () => {
 
   const filteredPendingApprovalClaims = pendingApprovalClaims.filter((claim) => {
     const matchesSearch = 
-      claim.claimNumber?.toLowerCase().includes(searchTermPendingApproval.toLowerCase()) ||
+      claim.id?.toString().toLowerCase().includes(searchTermPendingApproval.toLowerCase()) ||
       claim.customer?.fullName?.toLowerCase().includes(searchTermPendingApproval.toLowerCase()) ||
       claim.vehicleVin?.toLowerCase().includes(searchTermPendingApproval.toLowerCase()) ||
       claim.vehicle?.vin?.toLowerCase().includes(searchTermPendingApproval.toLowerCase());
@@ -774,7 +660,7 @@ const WarrantyApproval = () => {
 
   const filteredProcessedClaims = processedClaims.filter((claim) => {
     const matchesSearch = 
-      claim.claimNumber?.toLowerCase().includes(searchTermProcessed.toLowerCase()) ||
+      claim.id?.toString().toLowerCase().includes(searchTermProcessed.toLowerCase()) ||
       claim.customer?.fullName?.toLowerCase().includes(searchTermProcessed.toLowerCase()) ||
       claim.vehicleVin?.toLowerCase().includes(searchTermProcessed.toLowerCase()) ||
       claim.vehicle?.vin?.toLowerCase().includes(searchTermProcessed.toLowerCase());
@@ -839,7 +725,6 @@ const WarrantyApproval = () => {
               onOpenApproveModal={handleOpenApproveModal}
               onOpenRejectModal={handleOpenRejectModal}
               onViewClaim={handleViewClaim}
-              onOpenAddPartModal={handleOpenAddPartModal}
             />
           </div>
 
@@ -881,7 +766,7 @@ const WarrantyApproval = () => {
                     </h3>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        Bạn có chắc chắn muốn phê duyệt yêu cầu bảo hành <strong>{selectedClaim.claimNumber}</strong> không?
+                        Bạn có chắc chắn muốn phê duyệt yêu cầu bảo hành <strong>{selectedClaim.id}</strong> không?
                       </p>
                     </div>
                   </div>
@@ -896,7 +781,7 @@ const WarrantyApproval = () => {
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Xe:</span>
-                      <p className="text-gray-900">{selectedClaim.vehicle?.modelName || 'N/A'}</p>
+                      <p className="text-gray-900">{selectedClaim.vehicleModel || 'N/A'}</p>
                     </div>
                     <div className="col-span-2">
                       <span className="font-medium text-gray-700">Vấn đề:</span>
@@ -973,7 +858,7 @@ const WarrantyApproval = () => {
                     </h3>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        Bạn có chắc chắn muốn từ chối yêu cầu bảo hành <strong>{selectedClaim.claimNumber}</strong> không?
+                        Bạn có chắc chắn muốn từ chối yêu cầu bảo hành <strong>{selectedClaim.id}</strong> không?
                       </p>
                     </div>
                   </div>
@@ -988,7 +873,7 @@ const WarrantyApproval = () => {
                     </div>
                     <div>
                       <span className="font-medium text-gray-700">Xe:</span>
-                      <p className="text-gray-900">{selectedClaim.vehicle?.modelName || 'N/A'}</p>
+                      <p className="text-gray-900">{selectedClaim.vehicleModel || 'N/A'}</p>
                     </div>
                     <div className="col-span-2">
                       <span className="font-medium text-gray-700">Vấn đề:</span>
@@ -1061,8 +946,8 @@ const WarrantyApproval = () => {
                       Chi tiết yêu cầu bảo hành
                     </h3>
                     {selectedViewClaim && (
-                      <p className="text-sm text-gray-500">
-                        Mã yêu cầu: {selectedViewClaim.claimNumber}
+                      <p className="text-sm font-semibold text-gray-500">
+                        Mã yêu cầu: {selectedViewClaim.id}
                       </p>
                     )}
                   </div>
@@ -1095,11 +980,11 @@ const WarrantyApproval = () => {
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">Mã yêu cầu:</span>
-                            <span className="text-sm text-gray-900">{selectedViewClaim.claimNumber}</span>
+                            <span className="text-sm font-semibold text-gray-900">{selectedViewClaim.id}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">Ngày yêu cầu:</span>
-                            <span className="text-sm text-gray-900">{selectedViewClaim.requestDate}</span>
+                            <span className="text-sm text-gray-900">{selectedViewClaim.requestDate || 'N/A'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">Trạng thái:</span>
@@ -1113,10 +998,36 @@ const WarrantyApproval = () => {
                               <span className="text-sm text-gray-900">{selectedViewClaim.approvalDate}</span>
                             </div>
                           )}
+                          {selectedViewClaim.rejectedDate && (
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium text-gray-700">Ngày từ chối:</span>
+                              <span className="text-sm text-gray-900">{selectedViewClaim.rejectedDate}</span>
+                            </div>
+                          )}
                           {selectedViewClaim.completionDate && (
                             <div className="flex justify-between">
                               <span className="text-sm font-medium text-gray-700">Ngày hoàn thành:</span>
                               <span className="text-sm text-gray-900">{selectedViewClaim.completionDate}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-gray-700">Loại xử lý:</span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                              selectedViewClaim.processingType === 'MANUFACTURER_APPROVAL' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                              selectedViewClaim.processingType === 'SELF_SERVICE' ? 'bg-green-100 text-green-800 border-green-200' :
+                              selectedViewClaim.processingType === 'AUTO_APPROVED' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                              'bg-gray-100 text-gray-800 border-gray-200'
+                            }`}>
+                              {selectedViewClaim.processingType === 'MANUFACTURER_APPROVAL' ? 'Hãng duyệt' :
+                               selectedViewClaim.processingType === 'SELF_SERVICE' ? 'Tự xử lý' :
+                               selectedViewClaim.processingType === 'AUTO_APPROVED' ? 'Tự động duyệt' :
+                               selectedViewClaim.processingType || 'N/A'}
+                            </span>
+                          </div>
+                          {selectedViewClaim.autoApprovedAt && (
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium text-gray-700">Tự động duyệt lúc:</span>
+                              <span className="text-sm text-gray-900">{selectedViewClaim.autoApprovedAt}</span>
                             </div>
                           )}
                         </div>
@@ -1153,13 +1064,13 @@ const WarrantyApproval = () => {
                       {/* Thông tin xe */}
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                          <Car className="h-5 w-5 mr-2 text-purple-500" />
+                          <Car className="h-5 w-5 mr-2 text-teal-500" />
                           Thông tin xe
                         </h4>
                         <div className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">VIN:</span>
-                            <span className="text-sm text-gray-900">{selectedViewClaim.vehicleVin || selectedViewClaim.vehicle?.vin || 'N/A'}</span>
+                            <span className="text-sm font-semibold text-gray-900">{selectedViewClaim.vehicleVin || selectedViewClaim.vehicle?.vin || 'N/A'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">Model:</span>
@@ -1179,19 +1090,28 @@ const WarrantyApproval = () => {
                       {/* Thông tin phụ tùng */}
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                          <Shield className="h-5 w-5 mr-2 text-orange-500" />
-                          Thông tin phụ tùng
+                          <Shield className="h-5 w-5 mr-2 text-brown-500" />
+                          Phụ tùng yêu cầu
                         </h4>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">Tên phụ tùng:</span>
-                            <span className="text-sm text-gray-900">{selectedViewClaim.partName || 'N/A'}</span>
+                        {selectedViewClaim.items && selectedViewClaim.items.length > 0 ? (
+                          <div className="space-y-2">
+                            {selectedViewClaim.items.map((item, index) => (
+                              <div key={index} className="bg-white border border-gray-200 rounded-md p-3">
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium text-gray-900">{item.partName}</div>
+                                    <div className="text-xs text-gray-500 mt-1">Mã: {item.partModelId}</div>
+                                  </div>
+                                  <div className="text-sm font-semibold text-blue-600">
+                                    SL: {item.quantity}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">Số serial:</span>
-                            <span className="text-sm text-gray-900">{selectedViewClaim.partSerialNumber || 'N/A'}</span>
-                          </div>
-                        </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">Chưa có phụ tùng yêu cầu</p>
+                        )}
                       </div>
                     </div>
 
@@ -1206,51 +1126,38 @@ const WarrantyApproval = () => {
                       </div>
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                          <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                          <FileText className="h-5 w-5 mr-2 text-yellow-500" />
                           Báo cáo chẩn đoán
                         </h4>
                         <p className="text-sm text-gray-900">{selectedViewClaim.diagnosisReport}</p>
                       </div>
                     </div>
 
-                    {/* Thông tin xử lý */}
-                    {(selectedViewClaim.claimStatus === 'APPROVED' || 
-                      selectedViewClaim.claimStatus === 'PROCESSING' || 
-                      selectedViewClaim.claimStatus === 'COMPLETED' || 
-                      selectedViewClaim.claimStatus === 'REJECTED') && (
+                    {/* Thông tin người xử lý */}
+                    {(selectedViewClaim.approvedBy || selectedViewClaim.rejectedBy) && (
                       <div className="mt-6">
-                        {/* Người xử lý */}
                         <div className="bg-gray-50 rounded-lg p-4">
                           <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                            <User className="h-5 w-5 mr-2 text-blue-500" />
+                            <User className="h-5 w-5 mr-2 text-indigo-500" />
                             Người xử lý
                           </h4>
                           <div className="space-y-3">
                             <div className="flex justify-between">
                               <span className="text-sm font-medium text-gray-700">Tên:</span>
                               <span className="text-sm text-gray-900">
-                                {selectedViewClaim.claimStatus === 'REJECTED' 
-                                  ? (selectedViewClaim.rejectedBy?.fullName || selectedViewClaim.rejectedByName || 'N/A')
-                                  : (selectedViewClaim.approvedBy?.fullName || selectedViewClaim.approvedByName || 'N/A')
-                                }
+                                {selectedViewClaim.approvedBy?.fullName || selectedViewClaim.rejectedBy?.fullName || 'N/A'}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-sm font-medium text-gray-700">Username:</span>
                               <span className="text-sm text-gray-900">
-                                {selectedViewClaim.claimStatus === 'REJECTED' 
-                                  ? (selectedViewClaim.rejectedBy?.username || 'N/A')
-                                  : (selectedViewClaim.approvedBy?.username || 'N/A')
-                                }
+                                {selectedViewClaim.approvedBy?.username || selectedViewClaim.rejectedBy?.username || 'N/A'}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-sm font-medium text-gray-700">Vai trò:</span>
                               <span className="text-sm text-gray-900">
-                                {selectedViewClaim.claimStatus === 'REJECTED' 
-                                  ? (selectedViewClaim.rejectedBy?.role || 'N/A')
-                                  : (selectedViewClaim.approvedBy?.role || 'N/A')
-                                }
+                                {(selectedViewClaim.approvedBy?.role || selectedViewClaim.rejectedBy?.role) === 'EVM_STAFF' ? 'Nhân viên EVM' : 'N/A'}
                               </span>
                             </div>
                           </div>
@@ -1259,11 +1166,11 @@ const WarrantyApproval = () => {
                     )}
 
                     {/* Ghi chú và lý do */}
-                    {(selectedViewClaim.approvalNotes || selectedViewClaim.rejectionReason) && (
+                    {(selectedViewClaim.approvalNotes || selectedViewClaim.rejectionReason || selectedViewClaim.selfServiceReason) && (
                       <div className="mt-6">
                         <div className="bg-gray-50 rounded-lg p-4">
                           <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                            <FileText className="h-5 w-5 mr-2 text-yellow-500" />
+                            <FileText className="h-5 w-5 mr-2 text-purple-500" />
                             Ghi chú và lý do
                           </h4>
                           <div className="space-y-3">
@@ -1279,6 +1186,12 @@ const WarrantyApproval = () => {
                                 <p className="text-sm text-gray-900 mt-1">{selectedViewClaim.rejectionReason}</p>
                               </div>
                             )}
+                            {selectedViewClaim.selfServiceReason && (
+                              <div>
+                                <span className="text-sm font-medium text-gray-700">Lý do tự xử lý:</span>
+                                <p className="text-sm text-gray-900 mt-1">{selectedViewClaim.selfServiceReason}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1289,7 +1202,7 @@ const WarrantyApproval = () => {
                       <div className="mt-6">
                         <div className="bg-gray-50 rounded-lg p-4">
                           <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                            <Image className="h-5 w-5 mr-2 text-purple-500" />
+                            <Image className="h-5 w-5 mr-2 text-lime-500" />
                             Hình ảnh đính kèm
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1323,162 +1236,6 @@ const WarrantyApproval = () => {
                   className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:w-auto sm:text-sm"
                 >
                   Đóng
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal thêm phụ tùng */}
-      {showAddPartModal && selectedPartClaim && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                {/* Header */}
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <Plus className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Thêm phụ tùng
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Thêm phụ tùng cho xe VIN: <strong>{selectedPartClaim.vehicle?.vin || selectedPartClaim.vehicleVin}</strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Form inputs */}
-                <div className="mt-5 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Danh mục phụ tùng <span className="text-red-500">*</span>
-                    </label>
-                    {loadingCategories ? (
-                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
-                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                        <span className="text-gray-500">Đang tải categories...</span>
-                      </div>
-                    ) : (
-                      <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        value={partCategory}
-                        onChange={(e) => handleCategoryChange(e.target.value)}
-                      >
-                        <option value="">-- Chọn danh mục --</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tên phụ tùng <span className="text-red-500">*</span>
-                    </label>
-                    {!partCategory ? (
-                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                        Vui lòng chọn danh mục trước
-                      </div>
-                    ) : loadingPartNames ? (
-                      <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
-                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                        <span className="text-gray-500">Đang tải part names...</span>
-                      </div>
-                    ) : (
-                      <select
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        value={partName}
-                        onChange={(e) => setPartName(e.target.value)}
-                      >
-                        <option value="">-- Chọn tên phụ tùng --</option>
-                        {partNames.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Số lượng <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={partQuantity}
-                      onChange={(e) => setPartQuantity(Number(e.target.value))}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ghi chú
-                    </label>
-                    <textarea
-                      rows="3"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={partNote}
-                      onChange={(e) => setPartNote(e.target.value)}
-                      placeholder="Ghi chú thêm (tùy chọn)"
-                    />
-                  </div>
-
-                  {/* Error message */}
-                  {addPartError && (
-                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                      <div className="flex">
-                        <AlertCircle className="h-5 w-5 text-red-400" />
-                        <div className="ml-3">
-                          <p className="text-sm text-red-700">{addPartError}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={handleAddPart}
-                  disabled={addingPart}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {addingPart ? (
-                    <>
-                      <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                      Đang thêm...
-                    </>
-                  ) : (
-                    'Thêm phụ tùng'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCloseAddPartModal}
-                  disabled={addingPart}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
-                >
-                  Hủy
                 </button>
               </div>
             </div>
