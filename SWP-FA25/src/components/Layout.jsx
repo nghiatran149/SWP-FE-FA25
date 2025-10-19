@@ -12,12 +12,14 @@ import {
   X,
   Car,
   User,
+  UserRoundCog,
   Bell,
   UserCheck,
   Truck,
   LogOut
 } from 'lucide-react';
 import authUtils from '../utils/auth.js';
+import logoswp from '../assets/logoswp.png';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,7 +51,7 @@ const Layout = ({ children }) => {
     { name: 'Quản lý khách hàng', href: '/customers', icon: User, roles: ['SC_STAFF'] },
     { name: 'Quản lý xe', href: '/vehicles', icon: Car, roles: ['SC_STAFF'] },
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield, roles: ['SC_STAFF'] },
-    { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserCheck, roles: ['SC_STAFF'] },
+    { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
     { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone, roles: ['SC_STAFF'] },
 
     { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench, roles: ['SC_TECHNICIAN'] },
@@ -70,7 +72,7 @@ const Layout = ({ children }) => {
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
-            <Car className="h-8 w-8 text-primary-600" />
+            <img src={logoswp} alt="SWP Logo" className="h-16 w-16 object-contain" />
             <span className="text-xl font-bold text-gray-900">EV Warranty</span>
           </div>
           <button

@@ -67,7 +67,7 @@ const Login = () => {
     
     try {
       // Gọi API login
-      const response = await api.post('/v1/auth/login', {
+      const response = await api.post('/auth/signin', {
         username: formData.username,
         password: formData.password
       });

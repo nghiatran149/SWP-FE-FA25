@@ -8,6 +8,12 @@ const WarrantyApproval = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // State cho pagination
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  
   // State cho tìm kiếm và filter
   const [searchTermPendingApproval, setSearchTermPendingApproval] = useState('');
   const [statusFilterPendingApproval, setStatusFilterPendingApproval] = useState('all');
@@ -49,17 +55,21 @@ const WarrantyApproval = () => {
   const [loadingPartNames, setLoadingPartNames] = useState(false);
 
   // Fetch warranty claims từ API
-  const fetchWarrantyClaims = async () => {
+  const fetchWarrantyClaims = async (page = 0, size = 10) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/v1/warranty/claims');
+      const response = await api.get(`/warranty/claims?page=${page}&size=${size}`);
       console.log('API Response:', response.data);
       
-      if (Array.isArray(response.data)) {
-        setWarrantyClaims(response.data);
+      if (response.data && response.data.content && Array.isArray(response.data.content)) {
+        setWarrantyClaims(response.data.content);
+        setCurrentPage(response.data.page);
+        setPageSize(response.data.size);
+        setTotalPages(response.data.totalPages);
+        setTotalElements(response.data.totalElements);
       } else {
-        console.warn('API response is not an array:', response.data);
+        console.warn('API response is not in expected format:', response.data);
         setWarrantyClaims([]);
         setError('Dữ liệu API không đúng định dạng.');
       }
@@ -72,8 +82,8 @@ const WarrantyApproval = () => {
   };
 
   useEffect(() => {
-    fetchWarrantyClaims();
-  }, []);
+    fetchWarrantyClaims(currentPage, pageSize);
+  }, [currentPage, pageSize]);
 
   // Function để mở modal approve
   const handleOpenApproveModal = (claim) => {
@@ -349,6 +359,88 @@ const WarrantyApproval = () => {
     }
   };
 
+  // Pagination handlers
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(0); // Reset to first page when changing page size
+  };
+
+  // Pagination component
+  const Pagination = () => (
+    <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+      <div className="flex-1 flex justify-between sm:hidden">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Trước
+        </button>
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages - 1}
+          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Sau
+        </button>
+      </div>
+      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-gray-700">
+            Hiển thị <span className="font-medium">{currentPage * pageSize + 1}</span> đến{' '}
+            <span className="font-medium">{Math.min((currentPage + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
+            <span className="font-medium">{totalElements}</span> yêu cầu
+          </p>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value={5}>5 / trang</option>
+            <option value={10}>10 / trang</option>
+            <option value={20}>20 / trang</option>
+            <option value={50}>50 / trang</option>
+          </select>
+        </div>
+        <div>
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 0}
+              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Trước
+            </button>
+            {[...Array(totalPages)].map((_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index)}
+                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                  currentPage === index
+                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Sau
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  );
+
   // Component bảng yêu cầu chờ duyệt
   const PendingApprovalTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, onOpenApproveModal, onOpenRejectModal, onViewClaim, onOpenAddPartModal }) => (
     <>
@@ -506,12 +598,8 @@ const WarrantyApproval = () => {
               </tbody>
             </table>
 
-            {/* Summary */}
-            <div className="bg-gray-50 px-6 py-3">
-              <div className="text-sm text-gray-500">
-                Hiển thị {claims.length} yêu cầu chờ duyệt
-              </div>
-            </div>
+            {/* Pagination */}
+            <Pagination />
           </>
         )}
       </div>
@@ -664,12 +752,8 @@ const WarrantyApproval = () => {
               </tbody>
             </table>
 
-            {/* Summary */}
-            <div className="bg-gray-50 px-6 py-3">
-              <div className="text-sm text-gray-500">
-                Hiển thị {claims.length} yêu cầu đã xử lý
-              </div>
-            </div>
+            {/* Pagination */}
+            <Pagination />
           </>
         )}
       </div>

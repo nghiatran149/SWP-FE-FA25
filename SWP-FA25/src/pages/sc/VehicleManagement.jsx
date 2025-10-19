@@ -5,6 +5,8 @@ import api from '../../api/api';
 const VehicleManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [modelFilter, setModelFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [warrantyFilter, setWarrantyFilter] = useState('all');
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,7 +53,7 @@ const VehicleManagement = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/v1/vehicles');
+      const response = await api.get('/vehicles');
       console.log('API Response:', response.data);
       console.log('Response type:', typeof response.data);
       console.log('Is Array:', Array.isArray(response.data));
@@ -61,11 +63,15 @@ const VehicleManagement = () => {
         throw new Error('API trả về HTML page thay vì JSON. Có thể ngrok chưa setup đúng.');
       }
       
-      // Đảm bảo response.data là array
-      if (Array.isArray(response.data)) {
+      // Xử lý response mới với pagination structure
+      if (response.data && response.data.content && Array.isArray(response.data.content)) {
+        setVehicles(response.data.content);
+        console.log('Loaded vehicles from paginated response:', response.data.content.length);
+      } else if (Array.isArray(response.data)) {
+        // Fallback cho trường hợp API vẫn trả về array trực tiếp
         setVehicles(response.data);
       } else {
-        console.warn('API response is not an array:', response.data);
+        console.warn('API response is not in expected format:', response.data);
         setVehicles([]);
         setError('Dữ liệu API không đúng định dạng.');
       }
@@ -80,13 +86,14 @@ const VehicleManagement = () => {
 
   useEffect(() => {
     fetchVehicles();
+    fetchVehicleModels(); // Fetch models khi component mount để dùng cho filter
   }, []);
 
   // Fetch vehicle models từ API
   const fetchVehicleModels = async () => {
     try {
       setModelsLoading(true);
-      const response = await api.get('/v1/admin/vehicle-models');
+      const response = await api.get('/admin/models');
       console.log('Vehicle Models Response:', response.data);
       
       if (Array.isArray(response.data)) {
@@ -174,7 +181,7 @@ const VehicleManagement = () => {
       };
       
       console.log('Sending vehicle data:', vehicleData);
-      const response = await api.post('/v1/vehicles', vehicleData);
+      const response = await api.post('/vehicles', vehicleData);
       
       if (response.status === 201) {
         // Thêm thành công - refresh danh sách
@@ -238,7 +245,7 @@ const VehicleManagement = () => {
       };
       
       console.log('Updating vehicle:', editingVehicle.id, updateData);
-      const response = await api.put(`/v1/vehicles/${editingVehicle.id}`, updateData);
+      const response = await api.put(`/vehicles/${editingVehicle.id}`, updateData);
       
       if (response.status === 200) {
         // Cập nhật thành công - refresh danh sách
@@ -261,7 +268,7 @@ const VehicleManagement = () => {
   const fetchVehicleDetail = async (vin) => {
     try {
       setModalLoading(true);
-      const response = await api.get(`/v1/vehicles/${vin}`);
+      const response = await api.get(`/vehicles/${vin}`);
       console.log('Vehicle Detail Response:', response.data);
       setSelectedVehicle(response.data);
       setShowModal(true);
@@ -374,7 +381,13 @@ const VehicleManagement = () => {
     
     const matchesModel = modelFilter === 'all' || vehicle.model?.includes(modelFilter);
     
-    return matchesSearch && matchesModel;
+    const matchesStatus = statusFilter === 'all' || vehicle.vehicleStatus?.toUpperCase() === statusFilter;
+    
+    const matchesWarranty = warrantyFilter === 'all' || 
+      (warrantyFilter === 'active' && vehicle.warrantyActive && !vehicle.warrantyExpired) ||
+      (warrantyFilter === 'expired' && vehicle.warrantyExpired);
+    
+    return matchesSearch && matchesModel && matchesStatus && matchesWarranty;
   }) : [];
 
   return (
@@ -515,21 +528,44 @@ const VehicleManagement = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            {/* Filter dòng xe */}
             <select
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
               value={modelFilter}
               onChange={(e) => setModelFilter(e.target.value)}
+              disabled={modelsLoading}
             >
               <option value="all">Tất cả dòng xe</option>
-              <option value="Tesla">Tesla</option>
-              <option value="VinFast">VinFast</option>
-              <option value="VF8">VinFast VF8</option>
-              <option value="VF9">VinFast VF9</option>
+              {vehicleModels.map((model) => (
+                <option key={model.id} value={model.modelName}>
+                  {model.modelName}
+                </option>
+              ))}
             </select>
-            <button className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              <Filter className="h-4 w-4 mr-2" />
-              Bộ lọc
-            </button>
+            
+            {/* Filter trạng thái xe */}
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="ACTIVE">Hoạt động</option>
+              {/* <option value="MAINTENANCE">Bảo dưỡng</option> */}
+              <option value="INACTIVE">Không hoạt động</option>
+              {/* <option value="RECALLED">Triệu hồi</option> */}
+            </select>
+            
+            {/* Filter trạng thái bảo hành */}
+            <select
+              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              value={warrantyFilter}
+              onChange={(e) => setWarrantyFilter(e.target.value)}
+            >
+              <option value="all">Tất cả bảo hành</option>
+              <option value="active">Còn hiệu lực</option>
+              <option value="expired">Hết hạn</option>
+            </select>
           </div>
         </div>
         </div>
