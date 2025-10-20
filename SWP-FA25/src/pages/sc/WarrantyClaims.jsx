@@ -804,7 +804,7 @@ const WarrantyClaims = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.issueDescription}>
+                      <div className="text-sm text-gray-900 max-w-xs" style={{ maxWidth: '250px' }}>
                         {claim.issueDescription}
                       </div>
                     </td>
@@ -851,13 +851,13 @@ const WarrantyClaims = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleViewClaim(claim.id)}
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                          className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        {/* <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                        <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
                           <Edit className="h-4 w-4" />
-                        </button> */}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -995,7 +995,7 @@ const WarrantyClaims = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate" title={claim.issueDescription}>
+                      <div className="text-sm text-gray-900 max-w-xs" style={{ maxWidth: '250px' }}>
                         {claim.issueDescription}
                       </div>
                     </td>
@@ -1016,17 +1016,17 @@ const WarrantyClaims = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleViewClaim(claim.id)}
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                          className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        {/* <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                        <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
                           <Edit className="h-4 w-4" />
-                        </button> */}
+                        </button>
                         {claim.claimStatus === 'APPROVED' && (
                           <button 
                             onClick={() => handleOpenAssignModal(claim)}
-                            className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-md bg-transparent"
+                            className="p-2 text-white hover:text-white hover:bg-orange-600 rounded-md bg-orange-500 border border-gray-500"
                             title="Phân công kỹ thuật viên"
                           >
                             <UserPlus className="h-4 w-4" />

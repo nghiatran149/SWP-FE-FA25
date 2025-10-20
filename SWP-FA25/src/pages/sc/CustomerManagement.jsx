@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Eye, Edit, Phone, Mail, MapPin, Calendar, Car, CreditCard, User, Loader2, X, ToggleLeft, ToggleRight, AlertCircle, BookOpen, UserCheck, UserX } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Phone, Mail, MapPin, Calendar, Car, CreditCard, User, Loader2, X, ToggleLeft, ToggleRight, AlertCircle, BookOpen, UserCheck, UserX } from 'lucide-react';
 import api from '../../api/api';
 
 const CustomerManagement = () => {
@@ -409,10 +409,6 @@ const CustomerManagement = () => {
               <option value="active">Hoạt động</option>
               <option value="inactive">Không hoạt động</option>
             </select>
-            <button className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              <Filter className="h-4 w-4 mr-2" />
-              Bộ lọc
-            </button>
           </div>
         </div>
       </div>
@@ -523,14 +519,14 @@ const CustomerManagement = () => {
                     <div className="flex space-x-2 items-center">
                       <button 
                         onClick={() => handleViewCustomer(customer.id)}
-                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                        className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                         title="Xem chi tiết"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
                       <button 
                         onClick={() => handleEditCustomer(customer)}
-                        className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-md bg-transparent"
+                        className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
@@ -539,7 +535,7 @@ const CustomerManagement = () => {
                       <button
                         onClick={() => handleToggleActive(customer.id, customer.isActive)}
                         disabled={toggleLoading[customer.id]}
-                        className={`p-1 rounded-md transition-colors ${
+                        className={`p-2 rounded-md transition-colors ${
                           customer.isActive 
                             ? 'text-green-600 hover:text-green-800 bg-transparent hover:bg-green-50' 
                             : 'text-gray-400 hover:text-gray-600 bg-transparent hover:bg-gray-50'

@@ -362,7 +362,7 @@ const TechnicianTasks = () => {
                   <div className="flex space-x-2">
                     <button 
                       onClick={() => handleViewTask(task.id)}
-                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                      className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                       title="Xem chi tiết"
                     >
                       <Eye className="h-4 w-4" />
@@ -370,7 +370,7 @@ const TechnicianTasks = () => {
                     {task.status === 'ASSIGNED' && (
                       <button 
                         onClick={() => handleOpenStartModal(task)}
-                        className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent"
+                        className="p-2 text-white hover:text-white hover:bg-green-600 rounded-md bg-green-500 border border-gray-500"
                         title="Bắt đầu công việc"
                       >
                         <Wrench className="h-4 w-4" />
@@ -379,7 +379,7 @@ const TechnicianTasks = () => {
                     {task.status === 'IN_PROGRESS' && (
                       <button 
                         onClick={() => handleOpenCompleteModal(task)}
-                        className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent"
+                        className="p-2 text-white hover:text-white hover:bg-green-600 rounded-md bg-green-500 border border-gray-500"
                         title="Hoàn thành công việc"
                       >
                         <CheckCircle className="h-4 w-4" />
@@ -504,7 +504,7 @@ const TechnicianTasks = () => {
                   <div className="flex space-x-2">
                     <button 
                       onClick={() => handleViewTask(task.id)}
-                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                      className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                       title="Xem chi tiết"
                     >
                       <Eye className="h-4 w-4" />

@@ -660,14 +660,14 @@ const VehicleManagement = () => {
                   <div className="flex space-x-2">
                     <button 
                       onClick={() => fetchVehicleDetail(vehicle.vin)}
-                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                      className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                       disabled={modalLoading}
                     >
                       <Eye className="h-4 w-4" />
                     </button>
                     <button 
                       onClick={() => handleEditVehicle(vehicle)}
-                      className="p-2 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-md bg-transparent"
+                      className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500"
                     >
                       <Edit className="h-4 w-4" />
                     </button>
@@ -1256,9 +1256,7 @@ const VehicleManagement = () => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500"
                           >
                             <option value="ACTIVE">Hoạt động</option>
-                            <option value="MAINTENANCE">Bảo dưỡng</option>
                             <option value="INACTIVE">Không hoạt động</option>
-                            <option value="RECALLED">Triệu hồi</option>
                           </select>
                         </div>
                       </div>

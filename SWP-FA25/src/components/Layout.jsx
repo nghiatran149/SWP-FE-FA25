@@ -67,23 +67,31 @@ const Layout = ({ children }) => {
   const navigation = getNavigationForRole(currentUser?.role);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <img src={logoswp} alt="SWP Logo" className="h-16 w-16 object-contain" />
-            <span className="text-xl font-bold text-gray-900">EV Warranty</span>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
+        <div className="flex items-center justify-between h-20 px-4 border-b-2 border-blue-600/40 bg-gradient-to-br from-blue-950/40 to-blue-900/60 flex-shrink-0 shadow-lg">
+          <div className="flex items-center space-x-3">
+            <div className="bg-white p-2 rounded-xl shadow-xl">
+              <img src={logoswp} alt="SWP Logo" className="h-10 w-10 object-contain" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-white drop-shadow-md">EV Warranty</span>
+              <span className="text-xs text-blue-200 font-medium">Quản lý bảo hành</span>
+            </div>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="lg:hidden text-gray-500 hover:text-gray-700"
+            className="lg:hidden text-blue-200 hover:text-white transition-colors"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
         
-        <nav className="mt-8 px-4">
+        {/* Viền phân cách với gradient */}
+        <div className="h-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
+        
+        <nav className="mt-5 px-3 flex-1 overflow-y-auto sidebar-scroll pb-6">
           <ul className="space-y-2">
             {navigation.length > 0 ? (
               navigation.map((item) => {
@@ -94,23 +102,23 @@ const Layout = ({ children }) => {
                       to={item.href}
                       className={`${
                         isActive
-                          ? 'bg-primary-50 border-primary-500 text-primary-700'
-                          : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex items-center px-3 py-2 text-sm font-medium border-l-4 transition-colors duration-200`}
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/50 border-l-4 border-yellow-400'
+                          : 'text-blue-100 hover:bg-blue-800/50 hover:text-white border-l-4 border-transparent hover:border-blue-400'
+                      } group flex items-center px-3 py-3.5 text-sm font-semibold rounded-lg transition-all duration-200 transform hover:translate-x-1`}
                       onClick={() => setSidebarOpen(false)}
                     >
                       <item.icon
                         className={`${
-                          isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
-                        } mr-3 h-6 w-6`}
+                          isActive ? 'text-yellow-300' : 'text-blue-300 group-hover:text-blue-100'
+                        } mr-3 h-5 w-5 flex-shrink-0`}
                       />
-                      {item.name}
+                      <span className="truncate">{item.name}</span>
                     </Link>
                   </li>
                 );
               })
             ) : (
-              <li className="px-3 py-2 text-sm text-gray-500 italic">
+              <li className="px-3 py-2.5 text-xs text-blue-300 italic">
                 Không có menu khả dụng cho vai trò này
               </li>
             )}
@@ -121,45 +129,51 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between h-16 px-4">
-            <div className="flex items-center">
+        <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700 shadow-lg">
+          <div className="flex items-center justify-between h-20 px-6">
+            <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-gray-500 hover:text-gray-700"
+                className="lg:hidden text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
               >
                 <Menu className="h-6 w-6" />
               </button>
+              <div className="hidden lg:block">
+                <h1 className="text-2xl font-bold text-white drop-shadow-md">
+                  {navigation.find(item => item.href === location.pathname)?.name || 'Trang chủ'}
+                </h1>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              {/* <button className="text-gray-500 hover:text-gray-700">
+              {/* <button className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors relative">
                 <Bell className="h-6 w-6" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
               </button> */}
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-gray-600" />
+              <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                  <User className="h-6 w-6 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-700">{displayName}</span>
+                  <span className="text-sm font-bold text-white">{displayName}</span>
                   {currentUser && (
-                    <span className="text-xs text-gray-500">{currentUser.role}</span>
+                    <span className="text-xs text-blue-100 font-medium">{currentUser.role}</span>
                   )}
                 </div>
-                <button 
-                  onClick={handleLogout}
-                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors duration-200"
-                >
-                  Đăng xuất
-                  <LogOut className="h-4 w-4 ml-2" /> 
-                </button>
               </div>
+              <button 
+                onClick={handleLogout}
+                className="inline-flex items-center px-4 py-2.5 border-2 border-white/30 text-sm font-bold rounded-lg text-white bg-red-500 hover:bg-red-600 hover:border-white/50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                Đăng xuất
+                <LogOut className="h-4 w-4 ml-2" /> 
+              </button>
             </div>
           </div>
         </header>
 
         {/* Main content area */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50 to-blue-50">
           {children}
         </main>
       </div>
@@ -167,7 +181,7 @@ const Layout = ({ children }) => {
       {/* Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-30 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
