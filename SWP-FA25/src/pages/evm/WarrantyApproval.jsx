@@ -441,21 +441,21 @@ const WarrantyApproval = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button 
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                          className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                           title="Xem chi tiết"
                           onClick={() => onViewClaim(claim.id)}
                         >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button 
-                          className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent"
+                          className="p-2 text-white hover:text-white hover:bg-green-600 rounded-md bg-green-500 border border-gray-500"
                           title="Duyệt"
                           onClick={() => onOpenApproveModal(claim)}
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button 
-                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md bg-transparent"
+                          className="p-2 text-white hover:text-white hover:bg-red-600 rounded-md bg-red-500 border border-gray-500"
                           title="Từ chối"
                           onClick={() => onOpenRejectModal(claim)}
                         >
@@ -628,7 +628,7 @@ const WarrantyApproval = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button 
-                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent"
+                          className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                           title="Xem chi tiết"
                           onClick={() => onViewClaim(claim.id)}
                         >

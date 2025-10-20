@@ -80,6 +80,30 @@ const PartWarehouseManagement = () => {
     }
   };
 
+  const getCategoryColor = (category) => {
+    // Tạo màu dựa trên hash của tên danh mục để màu nhất quán
+    const colors = [
+      'bg-blue-100 text-blue-800 border-blue-200',
+      'bg-purple-100 text-purple-800 border-purple-200',
+      'bg-pink-100 text-pink-800 border-pink-200',
+      'bg-indigo-100 text-indigo-800 border-indigo-200',
+      'bg-cyan-100 text-cyan-800 border-cyan-200',
+      'bg-teal-100 text-teal-800 border-teal-200',
+      'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'bg-amber-100 text-amber-800 border-amber-200',
+      'bg-orange-100 text-orange-800 border-orange-200',
+      'bg-rose-100 text-rose-800 border-rose-200',
+    ];
+    
+    // Simple hash function
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+      hash = category.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   const filteredParts = parts.filter((part) => {
     const matchesSearch = 
       part.partName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -221,10 +245,6 @@ const PartWarehouseManagement = () => {
                 </option>
               ))}
             </select>
-            <button className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              <Filter className="h-4 w-4 mr-2" />
-              Bộ lọc nâng cao
-            </button>
           </div>
         </div>
       </div>
@@ -288,8 +308,10 @@ const PartWarehouseManagement = () => {
                       <div>
                         <div className="text-sm font-medium text-gray-900">{part.partName}</div>
                         <div className="text-sm text-gray-500">{part.partNumber}</div>
-                        <div className="text-xs text-gray-400">
-                          Danh mục: {part.category}
+                        <div className="mt-1">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getCategoryColor(part.category)}`}>
+                            Danh mục: {part.category}
+                          </span>
                         </div>
                       </div>
                     </td>
@@ -314,10 +336,10 @@ const PartWarehouseManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md bg-transparent">
+                        <button className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500">
                           <Eye className="h-4 w-4" />
                         </button>
-                        <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md bg-transparent">
+                        <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
                           <Edit className="h-4 w-4" />
                         </button>
                       </div>
