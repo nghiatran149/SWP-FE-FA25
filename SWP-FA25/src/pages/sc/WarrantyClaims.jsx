@@ -1102,7 +1102,7 @@ const WarrantyClaims = () => {
               <p className="text-sm text-red-700">{error}</p>
               <button
                 onClick={fetchWarrantyClaims}
-                className="mt-2 text-sm text-white bg-blue-600 hover:text-white underline"
+                className="mt-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
               >
                 Thử lại
               </button>

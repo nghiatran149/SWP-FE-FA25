@@ -14,6 +14,7 @@ import ServiceCampaigns from './pages/sc/ServiceCampaigns';
 import CustomerManagement from './pages/sc/CustomerManagement';
 import VehicleManagement from './pages/sc/VehicleManagement';
 import TechnicianManagement from './pages/sc/TechnicianManagement';
+import ServiceRecord from './pages/sc/ServiceRecord';
 
 // EVM (Electric Vehicle Manufacturer)
 import WarrantyApproval from './pages/evm/WarrantyApproval';
@@ -87,6 +88,11 @@ function App() {
               <Route path="/technician-tasks" element={
                 <ProtectedRoute allowedRoles={['SC_TECHNICIAN']}>
                   <TechnicianTasks />
+                </ProtectedRoute>
+              } />
+              <Route path="/service-records" element={
+                <ProtectedRoute allowedRoles={['SC_STAFF']}>
+                  <ServiceRecord />
                 </ProtectedRoute>
               } />
             </Routes>

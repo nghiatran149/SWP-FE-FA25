@@ -9,17 +9,17 @@ const HomePage = () => {
     switch (role) {
       case 'ADMIN':
         return {
-          title: 'Chào mừng, Quản trị viên!',
+          title: 'Chào mừng, ADMIN!',
           subtitle: 'Quản lý toàn bộ hệ thống bảo hành xe điện',
           features: [
             { icon: BarChart3, title: 'Báo cáo & Phân tích', desc: 'Theo dõi hiệu suất toàn hệ thống' },
-            { icon: Settings, title: 'Chuỗi cung ứng', desc: 'Quản lý chuỗi cung ứng phụ tùng' },
+            // { icon: Settings, title: 'Chuỗi cung ứng', desc: 'Quản lý chuỗi cung ứng phụ tùng' },
             { icon: Shield, title: 'Giám sát bảo hành', desc: 'Tổng quan tất cả yêu cầu bảo hành' }
           ]
         };
       case 'EVM_STAFF':
         return {
-          title: 'Chào mừng, Nhân viên EVM!',
+          title: 'Chào mừng, EVM STAFF!',
           subtitle: 'Quản lý phụ tùng và duyệt yêu cầu bảo hành',
           features: [
             { icon: Settings, title: 'Quản lý phụ tùng', desc: 'Theo dõi kho phụ tùng và linh kiện' },
@@ -29,7 +29,7 @@ const HomePage = () => {
         };
       case 'SC_STAFF':
         return {
-          title: 'Chào mừng, Nhân viên Trung tâm dịch vụ!',
+          title: 'Chào mừng, SC STAFF!',
           subtitle: 'Quản lý khách hàng và điều phối dịch vụ',
           features: [
             { icon: Users, title: 'Quản lý khách hàng', desc: 'Chăm sóc và hỗ trợ khách hàng' },
@@ -39,7 +39,7 @@ const HomePage = () => {
         };
       case 'SC_TECHNICIAN':
         return {
-          title: 'Chào mừng, Kỹ thuật viên!',
+          title: 'Chào mừng, SC TECHNICIAN!',
           subtitle: 'Thực hiện các công việc sửa chữa và bảo dưỡng',
           features: [
             { icon: Wrench, title: 'Công việc của tôi', desc: 'Xem và cập nhật tiến độ công việc' },

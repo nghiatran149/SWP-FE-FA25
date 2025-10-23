@@ -56,7 +56,7 @@ const CustomerManagement = () => {
       setError(null);
       const response = await api.get(`/customers?page=${page}&size=${size}&sort=id,desc`);
       console.log('API Response:', response.data);
-      
+
       if (response.data && response.data.content) {
         setCustomers(response.data.content);
         setPagination({
@@ -87,16 +87,16 @@ const CustomerManagement = () => {
   const handleAddCustomer = async (e) => {
     if (e) e.preventDefault();
     setAddLoading(true);
-    
+
     try {
       const customerData = {
         ...formData,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      
+
       const response = await api.post('/customers', customerData);
-      
+
       if (response.status === 201) {
         // Thêm thành công - refresh danh sách
         await fetchCustomers();
@@ -176,15 +176,15 @@ const CustomerManagement = () => {
   const handleUpdateCustomer = async (e) => {
     if (e) e.preventDefault();
     setEditLoading(true);
-    
+
     try {
       const customerData = {
         ...editFormData,
         updatedAt: new Date().toISOString()
       };
-      
+
       const response = await api.put(`/customers/${selectedCustomer.id}`, customerData);
-      
+
       if (response.status === 200) {
         // Cập nhật thành công - refresh danh sách
         await fetchCustomers();
@@ -205,15 +205,15 @@ const CustomerManagement = () => {
   const handleToggleActive = async (customerId, currentStatus) => {
     try {
       setToggleLoading(prev => ({ ...prev, [customerId]: true }));
-      
+
       const newStatus = !currentStatus;
       const response = await api.patch(`/customers/${customerId}/status?isActive=${newStatus}`);
-      
+
       if (response.status === 200) {
         // Cập nhật state local
-        setCustomers(prev => 
-          prev.map(customer => 
-            customer.id === customerId 
+        setCustomers(prev =>
+          prev.map(customer =>
+            customer.id === customerId
               ? { ...customer, isActive: newStatus }
               : customer
           )
@@ -234,9 +234,9 @@ const CustomerManagement = () => {
       setViewLoading(true);
       setSelectedViewCustomer(null);
       setShowViewModal(true);
-      
+
       const response = await api.get(`/customers/${customerId}`);
-      
+
       if (response.status === 200) {
         setSelectedViewCustomer(response.data);
       }
@@ -259,11 +259,11 @@ const CustomerManagement = () => {
     const birthDate = new Date(dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    
+
     return age;
   };
 
@@ -278,17 +278,17 @@ const CustomerManagement = () => {
   };
 
   const filteredCustomers = customers.filter((customer) => {
-    const matchesSearch = 
+    const matchesSearch =
       customer.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.phone?.includes(searchTerm) ||
       customer.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.identityNumber?.includes(searchTerm);
-    
-    const matchesStatus = statusFilter === 'all' || 
+
+    const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'active' && customer.isActive) ||
       (statusFilter === 'inactive' && !customer.isActive);
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -302,7 +302,7 @@ const CustomerManagement = () => {
             Quản lý thông tin khách hàng và lịch sử sử dụng dịch vụ
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setShowAddModal(true)}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
         >
@@ -421,15 +421,29 @@ const CustomerManagement = () => {
             <span className="ml-2 text-gray-600">Đang tải dữ liệu...</span>
           </div>
         ) : error ? (
-          <div className="text-center py-12">
-            <div className="text-red-600 mb-2">{error}</div>
-            <button 
-              onClick={() => fetchCustomers()}
-              className="text-primary-600 hover:text-primary-800"
-            >
-              Thử lại
-            </button>
+          // <div className="text-center py-12">
+          //   <div className="text-red-600 mb-2">{error}</div>
+          //   <button 
+          //     onClick={() => fetchCustomers()}
+          //     className="text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+          //   >
+          //     Thử lại
+          //   </button>
+          // </div>
+
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
+              <span className="text-red-800">{error}</span>
+              <button
+                onClick={fetchCustomers}
+                className="ml-auto px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+              >
+                Thử lại
+              </button>
+            </div>
           </div>
+
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -517,29 +531,28 @@ const CustomerManagement = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2 items-center">
-                      <button 
+                      <button
                         onClick={() => handleViewCustomer(customer.id)}
                         className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                         title="Xem chi tiết"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleEditCustomer(customer)}
                         className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      
+
                       {/* Toggle Active Status */}
                       <button
                         onClick={() => handleToggleActive(customer.id, customer.isActive)}
                         disabled={toggleLoading[customer.id]}
-                        className={`p-2 rounded-md transition-colors ${
-                          customer.isActive 
-                            ? 'text-green-600 hover:text-green-800 bg-transparent hover:bg-green-50' 
-                            : 'text-gray-400 hover:text-gray-600 bg-transparent hover:bg-gray-50'
-                        } ${toggleLoading[customer.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`p-2 rounded-md transition-colors ${customer.isActive
+                          ? 'text-green-600 hover:text-green-800 bg-transparent hover:bg-green-50'
+                          : 'text-gray-400 hover:text-gray-600 bg-transparent hover:bg-gray-50'
+                          } ${toggleLoading[customer.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title={customer.isActive ? 'Nhấn để vô hiệu hóa' : 'Nhấn để kích hoạt'}
                       >
                         {toggleLoading[customer.id] ? (
@@ -567,7 +580,7 @@ const CustomerManagement = () => {
             <br />
             Tổng số: {pagination.totalElements} khách hàng | Đã lọc: {filteredCustomers.length} khách hàng
           </div>
-          
+
           {pagination.totalPages > 1 && (
             <div className="flex items-center space-x-2">
               <button
@@ -577,11 +590,11 @@ const CustomerManagement = () => {
               >
                 Trước
               </button>
-              
+
               <span className="text-sm text-gray-700">
                 Trang {pagination.page + 1} / {pagination.totalPages}
               </span>
-              
+
               <button
                 disabled={pagination.page >= pagination.totalPages - 1}
                 onClick={() => fetchCustomers(pagination.page + 1, pagination.size)}
@@ -1018,107 +1031,105 @@ const CustomerManagement = () => {
                     </div>
                   ) : selectedViewCustomer ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Thông tin cá nhân */}
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-medium text-gray-900 border-b pb-2">Thông tin cá nhân</h4>
-                    
-                    <div className="grid grid-cols-1 gap-3">
-                      <div className="flex items-start">
-                        <User className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">Họ và tên</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.fullName}</dd>
-                        </div>
-                      </div>
+                      {/* Thông tin cá nhân */}
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-medium text-gray-900 border-b pb-2">Thông tin cá nhân</h4>
 
-                      <div className="flex items-start">
-                        <Mail className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">Email</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.email}</dd>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <Phone className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">Số điện thoại</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.phone}</dd>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <CreditCard className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">CCCD/CMND</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.identityNumber}</dd>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <MapPin className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">Địa chỉ</dt>
-                          <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.address}</dd>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start">
-                        <Calendar className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                        <div>
-                          <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>
-                          <dd className="mt-1">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              selectedViewCustomer.isActive 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {selectedViewCustomer.isActive ? 'Hoạt động' : 'Không hoạt động'}
-                            </span>
-                          </dd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Danh sách xe */}
-                  <div className="space-y-4">
-                    <h4 className="text-lg font-medium text-gray-900 border-b pb-2">Danh sách xe sở hữu</h4>
-                    
-                    {selectedViewCustomer.vehicles && selectedViewCustomer.vehicles.length > 0 ? (
-                      <div className="space-y-3">
-                        {selectedViewCustomer.vehicles.map((vehicle, index) => (
-                          <div key={index} className="bg-gray-50 rounded-lg p-4">
-                            <div className="flex items-start">
-                              <Car className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <h5 className="text-sm font-medium text-gray-900">
-                                    {vehicle.modelName} ({vehicle.year})
-                                  </h5>
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    vehicle.vehicleStatus === 'ACTIVE' 
-                                      ? 'bg-green-100 text-green-800' 
-                                      : 'bg-red-100 text-red-800'
-                                  }`}>
-                                    {vehicle.vehicleStatus === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 mt-1">VIN: {vehicle.vin}</p>
-                                <p className="text-sm text-gray-600">Màu sắc: {vehicle.color}</p>
-                                <p className="text-sm text-gray-600">ID xe: {vehicle.id}</p>
-                              </div>
+                        <div className="grid grid-cols-1 gap-3">
+                          <div className="flex items-start">
+                            <User className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Họ và tên</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.fullName}</dd>
                             </div>
                           </div>
-                        ))}
+
+                          <div className="flex items-start">
+                            <Mail className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Email</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.email}</dd>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start">
+                            <Phone className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Số điện thoại</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.phone}</dd>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start">
+                            <CreditCard className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">CCCD/CMND</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.identityNumber}</dd>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start">
+                            <MapPin className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Địa chỉ</dt>
+                              <dd className="mt-1 text-sm text-gray-900">{selectedViewCustomer.address}</dd>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start">
+                            <Calendar className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                            <div>
+                              <dt className="text-sm font-medium text-gray-500">Trạng thái</dt>
+                              <dd className="mt-1">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${selectedViewCustomer.isActive
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                                  }`}>
+                                  {selectedViewCustomer.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                                </span>
+                              </dd>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-500">Khách hàng chưa sở hữu xe nào</p>
+
+                      {/* Danh sách xe */}
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-medium text-gray-900 border-b pb-2">Danh sách xe sở hữu</h4>
+
+                        {selectedViewCustomer.vehicles && selectedViewCustomer.vehicles.length > 0 ? (
+                          <div className="space-y-3">
+                            {selectedViewCustomer.vehicles.map((vehicle, index) => (
+                              <div key={index} className="bg-gray-50 rounded-lg p-4">
+                                <div className="flex items-start">
+                                  <Car className="h-5 w-5 text-gray-400 mt-0.5 mr-3" />
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium text-gray-900">
+                                        {vehicle.modelName} ({vehicle.year})
+                                      </h5>
+                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${vehicle.vehicleStatus === 'ACTIVE'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
+                                        }`}>
+                                        {vehicle.vehicleStatus === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-1">VIN: {vehicle.vin}</p>
+                                    <p className="text-sm text-gray-600">Màu sắc: {vehicle.color}</p>
+                                    <p className="text-sm text-gray-600">ID xe: {vehicle.id}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <Car className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <p className="text-gray-500">Khách hàng chưa sở hữu xe nào</p>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
                     </div>
                   ) : (
                     <div className="text-center py-8">

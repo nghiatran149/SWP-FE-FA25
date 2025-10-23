@@ -16,7 +16,8 @@ import {
   Bell,
   UserCheck,
   Truck,
-  LogOut
+  LogOut,
+  FileText
 } from 'lucide-react';
 import authUtils from '../utils/auth.js';
 import logoswp from '../assets/logoswp.png';
@@ -49,9 +50,10 @@ const Layout = ({ children }) => {
     { name: 'Quản lý phụ tùng', href: '/parts', icon: Settings, roles: ['EVM_STAFF'] },
     
     { name: 'Quản lý khách hàng', href: '/customers', icon: User, roles: ['SC_STAFF'] },
+    { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
     { name: 'Quản lý xe', href: '/vehicles', icon: Car, roles: ['SC_STAFF'] },
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield, roles: ['SC_STAFF'] },
-    { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
+    { name: 'Lịch sử dịch vụ bảo hành', href: '/service-records', icon: FileText, roles: ['SC_STAFF'] },
     { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone, roles: ['SC_STAFF'] },
 
     { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench, roles: ['SC_TECHNICIAN'] },
@@ -103,7 +105,7 @@ const Layout = ({ children }) => {
                       className={`${
                         isActive
                           ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/50 border-l-4 border-yellow-400'
-                          : 'text-blue-100 hover:bg-blue-800/50 hover:text-white border-l-4 border-transparent hover:border-blue-400'
+                          : 'text-blue-100 hover:bg-blue-600/50 hover:text-white border-l-4 border-transparent hover:border-blue-400'
                       } group flex items-center px-3 py-3.5 text-sm font-semibold rounded-lg transition-all duration-200 transform hover:translate-x-1`}
                       onClick={() => setSidebarOpen(false)}
                     >

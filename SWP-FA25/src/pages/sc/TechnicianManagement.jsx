@@ -230,7 +230,7 @@ const TechnicianManagement = () => {
           <p className="text-sm text-red-800">{error}</p>
           <button 
             onClick={fetchTechnicians}
-            className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
+            className="mt-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
           >
             Thử lại
           </button>
