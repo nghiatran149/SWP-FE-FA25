@@ -2,6 +2,380 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Eye, Edit, Calendar, User, UserPlus, Car, X, Upload, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Image, Wrench } from 'lucide-react';
 import api from '../../api/api';
 
+// Component con để render bảng yêu cầu gửi sang hãng
+const SentToManufacturerTable = ({ 
+  claims, 
+  searchTerm, 
+  setSearchTerm, 
+  statusFilter, 
+  setStatusFilter, 
+  title, 
+  setShowAddModal,
+  getStatusColor,
+  getStatusText,
+  getProcessingTypeColor,
+  getProcessingTypeText,
+  handleViewClaim
+}) => (
+  <>
+    {/* Title */}
+    <div className="mb-4 flex justify-between items-center">
+      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+      <button
+        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600"
+        onClick={() => setShowAddModal(true)}
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Tạo yêu cầu cho hãng
+      </button>
+    </div>
+
+    {/* Filters */}
+    <div className="bg-white p-4 rounded-lg shadow mb-6">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo mã, tên khách hàng, VIN..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="PENDING">Chờ duyệt</option>
+            <option value="REJECTED">Từ chối</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {/* Claims Table */}
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      {claims.length === 0 ? (
+        <div className="text-center py-12">
+          <FileText className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Không có yêu cầu bảo hành</h3>
+          <p className="mt-1 text-sm text-gray-500">Chưa có yêu cầu bảo hành nào trong danh sách này.</p>
+        </div>
+      ) : (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Mã yêu cầu
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Khách hàng
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Xe
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Vấn đề
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Phụ tùng yêu cầu
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Loại xử lý
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Trạng thái
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Thao tác
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {claims.map((claim) => (
+              <tr key={claim.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{claim.id}</div>
+                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {claim.requestDate}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 text-gray-400 mr-2" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <Car className="h-4 w-4 text-gray-400 mr-2" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{claim.vehicle?.modelName || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{claim.vehicle?.vin || claim.vehicleVin}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 max-w-xs" style={{ maxWidth: '250px' }}>
+                    {claim.issueDescription}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  {claim.items && claim.items.length > 0 ? (
+                    <div className="text-sm text-gray-900">
+                      {claim.items.length === 1 ? (
+                        <div title={`${claim.items[0].partName} (SL: ${claim.items[0].quantity})`}>
+                          {claim.items[0].partName} (x{claim.items[0].quantity})
+                        </div>
+                      ) : (
+                        <div className="group relative">
+                          <div className="truncate max-w-xs cursor-help">
+                            {claim.items[0].partName} và {claim.items.length - 1} phụ tùng khác
+                          </div>
+                          <div className="hidden group-hover:block absolute z-10 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg -top-2 left-0 transform -translate-y-full w-64">
+                            <div className="space-y-1">
+                              {claim.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between">
+                                  <span>{item.partName}</span>
+                                  <span className="ml-2">x{item.quantity}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">Chưa có</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getProcessingTypeColor(claim.processingType)}`}>
+                    {getProcessingTypeText(claim.processingType)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
+                    {getStatusText(claim.claimStatus)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleViewClaim(claim.id)}
+                      className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
+                      <Edit className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </>
+);
+
+// Component con để render bảng yêu cầu đang xử lí
+const ProcessingClaimsTable = ({ 
+  claims, 
+  searchTerm, 
+  setSearchTerm, 
+  statusFilter, 
+  setStatusFilter, 
+  processingTypeFilter, 
+  setProcessingTypeFilter, 
+  title, 
+  setShowAddSelfServiceModal,
+  getStatusColor,
+  getStatusText,
+  getProcessingTypeColor,
+  getProcessingTypeText,
+  handleViewClaim,
+  handleOpenAssignModal
+}) => (
+  <>
+    {/* Title */}
+    <div className="mb-4 flex justify-between items-center">
+      <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+      <button
+        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600"
+        onClick={() => setShowAddSelfServiceModal(true)}
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Tạo yêu cầu tự xử lí
+      </button>
+    </div>
+
+    {/* Filters */}
+    <div className="bg-white p-4 rounded-lg shadow mb-6">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo mã, tên khách hàng, VIN..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="APPROVED">Chờ phân công</option>
+            <option value="PROCESS">Đang xử lý</option>
+            <option value="COMPLETED">Hoàn thành</option>
+          </select>
+          <select
+            className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+            value={processingTypeFilter}
+            onChange={(e) => setProcessingTypeFilter(e.target.value)}
+          >
+            <option value="all">Tất cả loại</option>
+            <option value="MANUFACTURER_APPROVAL">Hãng duyệt</option>
+            <option value="SELF_SERVICE">Tự xử lí</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    {/* Claims Table */}
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      {claims.length === 0 ? (
+        <div className="text-center py-12">
+          <FileText className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Không có yêu cầu bảo hành</h3>
+          <p className="mt-1 text-sm text-gray-500">Chưa có yêu cầu bảo hành nào trong danh sách này.</p>
+        </div>
+      ) : (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Mã yêu cầu
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Khách hàng
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Xe
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Vấn đề
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Kỹ thuật viên
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Loại xử lý
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Trạng thái
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Thao tác
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {claims.map((claim) => (
+              <tr key={claim.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{claim.id}</div>
+                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {claim.requestDate}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 text-gray-400 mr-2" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <Car className="h-4 w-4 text-gray-400 mr-2" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{claim.vehicle?.modelName || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{claim.vehicle?.vin || claim.vehicleVin}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 max-w-xs" style={{ maxWidth: '250px' }}>
+                    {claim.issueDescription}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {claim.technician?.fullName || 'Chưa phân công'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getProcessingTypeColor(claim.processingType)}`}>
+                    {getProcessingTypeText(claim.processingType)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
+                    {getStatusText(claim.claimStatus)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleViewClaim(claim.id)}
+                      className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    {claim.claimStatus === 'APPROVED' && (
+                      <button 
+                        onClick={() => handleOpenAssignModal(claim)}
+                        className="p-2 text-white hover:text-white hover:bg-orange-600 rounded-md bg-orange-500 border border-gray-500"
+                        title="Phân công kỹ thuật viên"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  </>
+);
+
 const WarrantyClaims = () => {
   // State cho API và loading
   const [warrantyClaims, setWarrantyClaims] = useState([]);
@@ -692,361 +1066,6 @@ const WarrantyClaims = () => {
     }));
   };
 
-  // Component con để render bảng yêu cầu gửi sang hãng
-  const SentToManufacturerTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, title, setShowAddModal }) => (
-    <>
-      {/* Title */}
-      <div className="mb-4 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-        <button
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600"
-          onClick={() => setShowAddModal(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Tạo yêu cầu cho hãng
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo mã, tên khách hàng, VIN..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <select
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="PENDING">Chờ duyệt</option>
-              <option value="REJECTED">Từ chối</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Claims Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        {claims.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Không có yêu cầu bảo hành</h3>
-            <p className="mt-1 text-sm text-gray-500">Chưa có yêu cầu bảo hành nào trong danh sách này.</p>
-          </div>
-        ) : (
-          <>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mã yêu cầu
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Khách hàng
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Xe
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vấn đề
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phụ tùng yêu cầu
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Loại xử lý
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {claims.map((claim) => (
-                  <tr key={claim.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{claim.id}</div>
-                      <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {claim.requestDate}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 text-gray-400 mr-2" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Car className="h-4 w-4 text-gray-400 mr-2" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{claim.vehicle?.modelName || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">{claim.vehicle?.vin || claim.vehicleVin}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs" style={{ maxWidth: '250px' }}>
-                        {claim.issueDescription}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {claim.items && claim.items.length > 0 ? (
-                        <div className="text-sm text-gray-900">
-                          {claim.items.length === 1 ? (
-                            <div title={`${claim.items[0].partName} (SL: ${claim.items[0].quantity})`}>
-                              {claim.items[0].partName} (x{claim.items[0].quantity})
-                            </div>
-                          ) : (
-                            <div className="group relative">
-                              <div className="truncate max-w-xs cursor-help">
-                                {claim.items[0].partName} và {claim.items.length - 1} phụ tùng khác
-                              </div>
-                              <div className="hidden group-hover:block absolute z-10 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg -top-2 left-0 transform -translate-y-full w-64">
-                                <div className="space-y-1">
-                                  {claim.items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between">
-                                      <span>{item.partName}</span>
-                                      <span className="ml-2">x{item.quantity}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400">Chưa có</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getProcessingTypeColor(claim.processingType)}`}>
-                        {getProcessingTypeText(claim.processingType)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
-                        {getStatusText(claim.claimStatus)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleViewClaim(claim.id)}
-                          className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            <Pagination />
-          </>
-        )}
-      </div>
-    </>
-  );
-
-  // Component con để render bảng yêu cầu đang xử lí
-  const ProcessingClaimsTable = ({ claims, searchTerm, setSearchTerm, statusFilter, setStatusFilter, processingTypeFilter, setProcessingTypeFilter, title, setShowAddSelfServiceModal }) => (
-    <>
-      {/* Title */}
-      <div className="mb-4 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-        <button
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-500 hover:bg-teal-600"
-          onClick={() => setShowAddSelfServiceModal(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Tạo yêu cầu tự xử lí
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo mã, tên khách hàng, VIN..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <select
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="APPROVED">Chờ phân công</option>
-              <option value="PROCESS">Đang xử lý</option>
-              <option value="COMPLETED">Hoàn thành</option>
-            </select>
-            <select
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              value={processingTypeFilter}
-              onChange={(e) => setProcessingTypeFilter(e.target.value)}
-            >
-              <option value="all">Tất cả loại</option>
-              <option value="MANUFACTURER_APPROVAL">Hãng duyệt</option>
-              <option value="SELF_SERVICE">Tự xử lí</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Claims Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        {claims.length === 0 ? (
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Không có yêu cầu bảo hành</h3>
-            <p className="mt-1 text-sm text-gray-500">Chưa có yêu cầu bảo hành nào trong danh sách này.</p>
-          </div>
-        ) : (
-          <>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Mã yêu cầu
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Khách hàng
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Xe
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Vấn đề
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Kỹ thuật viên
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Loại xử lý
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {claims.map((claim) => (
-                  <tr key={claim.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{claim.id}</div>
-                      <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {claim.requestDate}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 text-gray-400 mr-2" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{claim.customer?.fullName || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">{claim.customer?.phone || ''}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Car className="h-4 w-4 text-gray-400 mr-2" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{claim.vehicle?.modelName || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">{claim.vehicle?.vin || claim.vehicleVin}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs" style={{ maxWidth: '250px' }}>
-                        {claim.issueDescription}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {claim.technician?.fullName || 'Chưa phân công'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getProcessingTypeColor(claim.processingType)}`}>
-                        {getProcessingTypeText(claim.processingType)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(claim.claimStatus)}`}>
-                        {getStatusText(claim.claimStatus)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleViewClaim(claim.id)}
-                          className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        {claim.claimStatus === 'APPROVED' && (
-                          <button 
-                            onClick={() => handleOpenAssignModal(claim)}
-                            className="p-2 text-white hover:text-white hover:bg-orange-600 rounded-md bg-orange-500 border border-gray-500"
-                            title="Phân công kỹ thuật viên"
-                          >
-                            <UserPlus className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {/* Pagination */}
-            <Pagination />
-          </>
-        )}
-      </div>
-    </>
-  );
-
   const filteredSentToManufacturerClaims = sentToManufacturerClaims.filter((claim) => {
     const matchesSearch =
       claim.claimNumber?.toLowerCase().includes(searchTermSentToManufacturer.toLowerCase()) ||
@@ -1102,7 +1121,7 @@ const WarrantyClaims = () => {
               <p className="text-sm text-red-700">{error}</p>
               <button
                 onClick={fetchWarrantyClaims}
-                className="mt-2 text-sm text-white bg-blue-600 hover:text-white underline"
+                className="mt-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
               >
                 Thử lại
               </button>
@@ -1124,6 +1143,11 @@ const WarrantyClaims = () => {
               setStatusFilter={setStatusFilterSentToManufacturer}
               title="Yêu cầu gửi sang hãng"
               setShowAddModal={setShowAddModal}
+              getStatusColor={getStatusColor}
+              getStatusText={getStatusText}
+              getProcessingTypeColor={getProcessingTypeColor}
+              getProcessingTypeText={getProcessingTypeText}
+              handleViewClaim={handleViewClaim}
             />
           </div>
 
@@ -1139,6 +1163,12 @@ const WarrantyClaims = () => {
               setProcessingTypeFilter={setProcessingTypeFilter}
               title="Yêu cầu đang xử lí"
               setShowAddSelfServiceModal={setShowAddSelfServiceModal}
+              getStatusColor={getStatusColor}
+              getStatusText={getStatusText}
+              getProcessingTypeColor={getProcessingTypeColor}
+              getProcessingTypeText={getProcessingTypeText}
+              handleViewClaim={handleViewClaim}
+              handleOpenAssignModal={handleOpenAssignModal}
             />
           </div>
         </>
