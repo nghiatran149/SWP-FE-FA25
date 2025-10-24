@@ -53,8 +53,8 @@ const Layout = ({ children }) => {
     { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
     { name: 'Quản lý xe', href: '/vehicles', icon: Car, roles: ['SC_STAFF'] },
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield, roles: ['SC_STAFF'] },
-    { name: 'Lịch sử dịch vụ bảo hành', href: '/service-records', icon: FileText, roles: ['SC_STAFF'] },
-    { name: 'Chiến dịch dịch vụ', href: '/service-campaigns', icon: Megaphone, roles: ['SC_STAFF'] },
+    { name: 'Lịch sử dịch vụ', href: '/service-records', icon: FileText, roles: ['SC_STAFF'] },
+    { name: 'Quản lý chiến dịch', href: '/service-campaigns', icon: Megaphone, roles: ['SC_STAFF'] },
 
     { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench, roles: ['SC_TECHNICIAN'] },
   ];
