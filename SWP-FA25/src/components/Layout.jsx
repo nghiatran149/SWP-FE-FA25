@@ -17,7 +17,9 @@ import {
   UserCheck,
   Truck,
   LogOut,
-  FileText
+  FileText,
+  Package,
+  PackageX
 } from 'lucide-react';
 import authUtils from '../utils/auth.js';
 import logoswp from '../assets/logoswp.png';
@@ -47,7 +49,7 @@ const Layout = ({ children }) => {
     { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck, roles: ['ADMIN'] },
 
     { name: 'Duyệt yêu cầu bảo hành', href: '/warranty-approval', icon: CheckCircle, roles: ['EVM_STAFF'] },
-    { name: 'Quản lý phụ tùng', href: '/parts', icon: Settings, roles: ['EVM_STAFF'] },
+    { name: 'Kho phụ tùng', href: '/parts', icon: Package, roles: ['EVM_STAFF'] },
     
     { name: 'Quản lý khách hàng', href: '/customers', icon: User, roles: ['SC_STAFF'] },
     { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
@@ -55,6 +57,8 @@ const Layout = ({ children }) => {
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield, roles: ['SC_STAFF'] },
     { name: 'Lịch sử dịch vụ', href: '/service-records', icon: FileText, roles: ['SC_STAFF'] },
     { name: 'Quản lý chiến dịch', href: '/service-campaigns', icon: Megaphone, roles: ['SC_STAFF'] },
+    { name: 'Phụ tùng có sẵn', href: '/available-parts', icon: Package, roles: ['SC_STAFF'] },
+    { name: 'Phụ tùng lỗi', href: '/defective-parts', icon: PackageX, roles: ['SC_STAFF'] },
 
     { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench, roles: ['SC_TECHNICIAN'] },
   ];

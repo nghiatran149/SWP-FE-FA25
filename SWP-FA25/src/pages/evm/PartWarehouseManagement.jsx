@@ -342,7 +342,7 @@ const PartWarehouseManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý phụ tùng</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý kho phụ tùng</h1>
           <p className="mt-1 text-sm text-gray-500">
             Theo dõi tồn kho và quản lý phụ tùng thay thế
           </p>

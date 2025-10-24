@@ -29,7 +29,7 @@ const ServiceCampaigns = () => {
       setLoading(true);
       setError(null);
       const response = await api.get(`/campaigns?page=${page}&size=${size}`);
-      
+
       if (response.data && response.data.content && Array.isArray(response.data.content)) {
         setCampaigns(response.data.content);
         setCurrentPage(response.data.number);
@@ -53,7 +53,7 @@ const ServiceCampaigns = () => {
     try {
       setAnalyticsLoading(true);
       const response = await api.get('/campaigns/analytics');
-      
+
       if (response.data && response.data.overview) {
         setAnalytics(response.data.overview);
       }
@@ -245,6 +245,30 @@ const ServiceCampaigns = () => {
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
+                    <LandPlot className="h-6 w-6 text-green-400" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Tổng chiến dịch
+                      </dt>
+                      <dd className="text-2xl font-semibold text-gray-900">
+                        {analyticsLoading ? (
+                          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                        ) : (
+                          analytics?.totalCampaigns || 0
+                        )}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
                     <Cog className="h-6 w-6 text-blue-400" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
@@ -317,30 +341,6 @@ const ServiceCampaigns = () => {
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <LandPlot className="h-6 w-6 text-green-400" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Tổng chiến dịch
-                      </dt>
-                      <dd className="text-2xl font-semibold text-gray-900">
-                        {analyticsLoading ? (
-                          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                        ) : (
-                          analytics?.totalCampaigns || 0
-                        )}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
                     <Calendar className="h-6 w-6 text-gray-400" />
                   </div>
                   <div className="ml-5 w-0 flex-1">
@@ -377,9 +377,9 @@ const ServiceCampaigns = () => {
                         {getTypeText(campaign.type)}
                       </span>
                     </div>
-                    
+
                     <p className="text-sm text-gray-600 mb-4">Mã chiến dịch: {campaign.campaignId}</p>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div className="flex items-center text-sm text-gray-500">
                         <Calendar className="h-4 w-4 mr-2" />
@@ -403,9 +403,8 @@ const ServiceCampaigns = () => {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full ${
-                            campaign.status === 'COMPLETED' ? 'bg-green-500' : 'bg-yellow-400'
-                          }`}
+                          className={`h-2 rounded-full ${campaign.status === 'COMPLETED' ? 'bg-green-500' : 'bg-yellow-400'
+                            }`}
                           style={{
                             width: `${getCompletionPercentage(campaign.completionRate)}%`
                           }}
@@ -415,7 +414,7 @@ const ServiceCampaigns = () => {
                   </div>
 
                   <div className="flex space-x-2 ml-4">
-                    <button 
+                    <button
                       onClick={() => handleViewCampaign(campaign.campaignId)}
                       className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500"
                     >
@@ -487,11 +486,10 @@ const ServiceCampaigns = () => {
                       <button
                         key={index}
                         onClick={() => handlePageChange(index)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          currentPage === index
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === index
                             ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                             : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         {index + 1}
                       </button>
@@ -613,7 +611,7 @@ const ServiceCampaigns = () => {
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">Năm sản xuất:</span>
                             <span className="text-sm text-gray-900">
-                              {selectedCampaign.yearFrom && selectedCampaign.yearTo 
+                              {selectedCampaign.yearFrom && selectedCampaign.yearTo
                                 ? `${selectedCampaign.yearFrom} - ${selectedCampaign.yearTo}`
                                 : 'N/A'}
                             </span>
@@ -653,7 +651,7 @@ const ServiceCampaigns = () => {
                           <div className="bg-white rounded-lg p-3 border border-gray-200">
                             <div className="text-xs text-gray-500 mb-1">Tỷ lệ hoàn thành</div>
                             <div className="text-xl font-semibold text-teal-600">
-                              {selectedCampaign.totalVehicles > 0 
+                              {selectedCampaign.totalVehicles > 0
                                 ? Math.round((selectedCampaign.completedVehicles / selectedCampaign.totalVehicles) * 100)
                                 : 0}%
                             </div>
