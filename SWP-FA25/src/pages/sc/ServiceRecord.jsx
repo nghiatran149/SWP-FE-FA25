@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Calendar, User, Car, FileText, Wrench, Clock, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Search, Eye, Calendar, User, Car, FileText, Wrench, Clock, Replace, CheckCircle, AlertCircle, X } from 'lucide-react';
 import api from '../../api/api';
 
 const ServiceRecord = () => {
@@ -99,12 +99,14 @@ const ServiceRecord = () => {
     switch (type) {
       case 'WARRANTY_REPAIR':
         return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'MAINTENANCE':
-        return 'bg-teal-100 text-teal-800 border-teal-200';
-      case 'REPAIR':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'RECALL':
-        return 'bg-red-100 text-red-800 border-red-200';
+      case 'WARRANTY_REPLACE':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      // case 'MAINTENANCE':
+      //   return 'bg-teal-100 text-teal-800 border-teal-200';
+      // case 'REPAIR':
+      //   return 'bg-orange-100 text-orange-800 border-orange-200';
+      // case 'RECALL':
+      //   return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -114,12 +116,14 @@ const ServiceRecord = () => {
     switch (type) {
       case 'WARRANTY_REPAIR':
         return 'Sửa chữa bảo hành';
-      case 'MAINTENANCE':
-        return 'Bảo dưỡng';
-      case 'REPAIR':
-        return 'Sửa chữa';
-      case 'RECALL':
-        return 'Triệu hồi';
+        case 'WARRANTY_REPLACE':
+        return 'Thay thế bảo hành';
+      // case 'MAINTENANCE':
+      //   return 'Bảo dưỡng';
+      // case 'REPAIR':
+      //   return 'Sửa chữa';
+      // case 'RECALL':
+      //   return 'Triệu hồi';
       default:
         return type || 'N/A';
     }
@@ -194,13 +198,13 @@ const ServiceRecord = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <Clock className="h-6 w-6 text-yellow-400" />
+                <Replace className="h-6 w-6 text-yellow-400" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Đang xử lý</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Thay thế bảo hành</dt>
                   <dd className="text-2xl font-semibold text-gray-900">
-                    {serviceRecords.filter(r => r.serviceStatus === 'IN_PROGRESS').length}
+                    {serviceRecords.filter(r => r.serviceType === 'WARRANTY_REPLACE').length}
                   </dd>
                 </dl>
               </div>
@@ -216,7 +220,7 @@ const ServiceRecord = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Dịch vụ bảo hành</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Sửa chữa bảo hành</dt>
                   <dd className="text-2xl font-semibold text-gray-900">
                     {serviceRecords.filter(r => r.serviceType === 'WARRANTY_REPAIR').length}
                   </dd>

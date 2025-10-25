@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Eye, Edit, Package, AlertTriangle, TrendingDown, TrendingUp, Loader2, Wrench, Warehouse} from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Package, AlertTriangle, TrendingDown, TrendingUp, Loader2, Wrench, Warehouse, X } from 'lucide-react';
 import api from '../../api/api';
 
 const PartWarehouseManagement = () => {
@@ -11,6 +11,29 @@ const PartWarehouseManagement = () => {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [availablePartNames, setAvailablePartNames] = useState([]);
+
+  // State cho modal bổ sung phụ tùng
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    category: '',
+    partName: '',
+    quantity: 1,
+    note: ''
+  });
+
+  // State cho modal cung cấp phụ tùng
+  const [showSupplyModal, setShowSupplyModal] = useState(false);
+  const [supplyLoading, setSupplyLoading] = useState(false);
+  const [supplyFormData, setSupplyFormData] = useState({
+    category: '',
+    partName: '',
+    quantity: 1,
+    note: ''
+  });
+  const [supplyAvailablePartNames, setSupplyAvailablePartNames] = useState([]);
 
   // Fetch parts từ API
   const fetchParts = async () => {
@@ -37,7 +60,197 @@ const PartWarehouseManagement = () => {
 
   useEffect(() => {
     fetchParts();
+    fetchCategories();
   }, []);
+
+  // Fetch categories từ API
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/evm/categories');
+      console.log('Categories Response:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        setAvailableCategories(response.data);
+      } else {
+        console.warn('Categories response is not an array:', response.data);
+        setAvailableCategories([]);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setAvailableCategories([]);
+    }
+  };
+
+  // Fetch part names theo category
+  const fetchPartNamesByCategory = async (category) => {
+    try {
+      const response = await api.get(`/evm/parts/names?category=${encodeURIComponent(category)}`);
+      console.log('Part Names Response:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        setAvailablePartNames(response.data);
+      } else {
+        console.warn('Part names response is not an array:', response.data);
+        setAvailablePartNames([]);
+      }
+    } catch (err) {
+      console.error('Error fetching part names:', err);
+      setAvailablePartNames([]);
+    }
+  };
+
+  // Hàm xử lý bổ sung phụ tùng
+  const handleAddParts = async (e) => {
+    if (e) e.preventDefault();
+    setAddLoading(true);
+
+    try {
+      const partData = {
+        category: formData.category,
+        partName: formData.partName,
+        quantity: parseInt(formData.quantity),
+        note: formData.note
+      };
+
+      const response = await api.post('/evm/parts/batch', partData);
+
+      if (response.status === 201 || response.status === 200) {
+        // Thêm thành công - refresh danh sách
+        await fetchParts();
+        setShowAddModal(false);
+        resetForm();
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Error adding parts:', err);
+      setError('Không thể bổ sung phụ tùng. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      category: '',
+      partName: '',
+      quantity: 1,
+      note: ''
+    });
+    setAvailablePartNames([]); // Reset danh sách tên phụ tùng
+  };
+
+  // Xử lý thay đổi input
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Nếu thay đổi category, fetch part names và reset partName
+    if (name === 'category') {
+      setFormData(prev => ({
+        ...prev,
+        category: value,
+        partName: '' // Reset partName khi đổi category
+      }));
+      
+      // Fetch part names nếu có category được chọn
+      if (value) {
+        fetchPartNamesByCategory(value);
+      } else {
+        setAvailablePartNames([]);
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  // ===== MODAL CUNG CẤP PHỤ TÙNG =====
+  
+  // Fetch part names theo category cho modal cung cấp
+  const fetchSupplyPartNamesByCategory = async (category) => {
+    try {
+      const response = await api.get(`/evm/parts/names?category=${encodeURIComponent(category)}`);
+      console.log('Supply Part Names Response:', response.data);
+      
+      if (Array.isArray(response.data)) {
+        setSupplyAvailablePartNames(response.data);
+      } else {
+        console.warn('Supply part names response is not an array:', response.data);
+        setSupplyAvailablePartNames([]);
+      }
+    } catch (err) {
+      console.error('Error fetching supply part names:', err);
+      setSupplyAvailablePartNames([]);
+    }
+  };
+
+  // Hàm xử lý cung cấp phụ tùng
+  const handleSupplyParts = async (e) => {
+    if (e) e.preventDefault();
+    setSupplyLoading(true);
+
+    try {
+      const partData = {
+        category: supplyFormData.category,
+        partName: supplyFormData.partName,
+        quantity: parseInt(supplyFormData.quantity),
+        note: supplyFormData.note
+      };
+
+      const response = await api.post('/evm/parts/supply', partData);
+
+      if (response.status === 201 || response.status === 200) {
+        // Cung cấp thành công - refresh danh sách
+        await fetchParts();
+        setShowSupplyModal(false);
+        resetSupplyForm();
+        setError(null);
+      }
+    } catch (err) {
+      console.error('Error supplying parts:', err);
+      setError('Không thể cung cấp phụ tùng. Vui lòng kiểm tra lại thông tin.');
+    } finally {
+      setSupplyLoading(false);
+    }
+  };
+
+  // Reset form cung cấp
+  const resetSupplyForm = () => {
+    setSupplyFormData({
+      category: '',
+      partName: '',
+      quantity: 1,
+      note: ''
+    });
+    setSupplyAvailablePartNames([]);
+  };
+
+  // Xử lý thay đổi input cho modal cung cấp
+  const handleSupplyInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Nếu thay đổi category, fetch part names và reset partName
+    if (name === 'category') {
+      setSupplyFormData(prev => ({
+        ...prev,
+        category: value,
+        partName: ''
+      }));
+      
+      if (value) {
+        fetchSupplyPartNamesByCategory(value);
+      } else {
+        setSupplyAvailablePartNames([]);
+      }
+    } else {
+      setSupplyFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
 
   // Lấy danh mục từ API data
   const categories = [
@@ -129,15 +342,27 @@ const PartWarehouseManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý phụ tùng</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý kho phụ tùng</h1>
           <p className="mt-1 text-sm text-gray-500">
             Theo dõi tồn kho và quản lý phụ tùng thay thế
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600">
-          <Plus className="h-4 w-4 mr-2" />
-          Bổ sung phụ tùng
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-500 hover:bg-purple-600"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Bổ sung phụ tùng
+          </button>
+          <button 
+            onClick={() => setShowSupplyModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            Cung cấp phụ tùng
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -288,9 +513,9 @@ const PartWarehouseManagement = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -334,7 +559,7 @@ const PartWarehouseManagement = () => {
                         {part.inStock ? 'Trong kho' : 'Không trong kho'} • {part.installed ? 'Đã lắp' : 'Chưa lắp'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
                         <button className="p-2 text-white hover:text-white hover:bg-blue-600 rounded-md bg-blue-500 border border-gray-500">
                           <Eye className="h-4 w-4" />
@@ -343,7 +568,7 @@ const PartWarehouseManagement = () => {
                           <Edit className="h-4 w-4" />
                         </button>
                       </div>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               )}
@@ -358,6 +583,302 @@ const PartWarehouseManagement = () => {
           Hiển thị {filteredParts.length} trong tổng số {parts.length} phụ tùng
         </div>
       </div>
+
+      {/* Modal bổ sung phụ tùng */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Bổ sung phụ tùng
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      resetForm();
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleAddParts} className="space-y-4">
+                  {/* Danh mục */}
+                  <div>
+                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                      Danh mục <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="category"
+                      name="category"
+                      required
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="">-- Chọn danh mục --</option>
+                      {availableCategories.map((cat, index) => (
+                        <option key={index} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Tên phụ tùng */}
+                  <div>
+                    <label htmlFor="partName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Tên phụ tùng <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="partName"
+                      name="partName"
+                      required
+                      value={formData.partName}
+                      onChange={handleInputChange}
+                      disabled={!formData.category}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {!formData.category ? '-- Vui lòng chọn danh mục trước --' : '-- Chọn tên phụ tùng --'}
+                      </option>
+                      {availablePartNames.map((partName, index) => (
+                        <option key={index} value={partName}>
+                          {partName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Số lượng */}
+                  <div>
+                    <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                      Số lượng <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="quantity"
+                      name="quantity"
+                      required
+                      min="1"
+                      value={formData.quantity}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Nhập số lượng"
+                    />
+                  </div>
+
+                  {/* Ghi chú */}
+                  <div>
+                    <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
+                      Ghi chú
+                    </label>
+                    <textarea
+                      id="note"
+                      name="note"
+                      rows="3"
+                      value={formData.note}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Nhập ghi chú (nếu có)"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddModal(false);
+                        resetForm();
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 bg-transparent"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={addLoading}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-500 hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {addLoading ? (
+                        <>
+                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Bổ sung
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cung cấp phụ tùng */}
+      {showSupplyModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Cung cấp phụ tùng
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowSupplyModal(false);
+                      resetSupplyForm();
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Form */}
+                <form onSubmit={handleSupplyParts} className="space-y-4">
+                  {/* Danh mục */}
+                  <div>
+                    <label htmlFor="supply-category" className="block text-sm font-medium text-gray-700 mb-1">
+                      Danh mục <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="supply-category"
+                      name="category"
+                      required
+                      value={supplyFormData.category}
+                      onChange={handleSupplyInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                    >
+                      <option value="">-- Chọn danh mục --</option>
+                      {availableCategories.map((cat, index) => (
+                        <option key={index} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Tên phụ tùng */}
+                  <div>
+                    <label htmlFor="supply-partName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Tên phụ tùng <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="supply-partName"
+                      name="partName"
+                      required
+                      value={supplyFormData.partName}
+                      onChange={handleSupplyInputChange}
+                      disabled={!supplyFormData.category}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {!supplyFormData.category ? '-- Vui lòng chọn danh mục trước --' : '-- Chọn tên phụ tùng --'}
+                      </option>
+                      {supplyAvailablePartNames.map((partName, index) => (
+                        <option key={index} value={partName}>
+                          {partName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Số lượng */}
+                  <div>
+                    <label htmlFor="supply-quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                      Số lượng <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="supply-quantity"
+                      name="quantity"
+                      required
+                      min="1"
+                      value={supplyFormData.quantity}
+                      onChange={handleSupplyInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      placeholder="Nhập số lượng"
+                    />
+                  </div>
+
+                  {/* Ghi chú */}
+                  <div>
+                    <label htmlFor="supply-note" className="block text-sm font-medium text-gray-700 mb-1">
+                      Ghi chú
+                    </label>
+                    <textarea
+                      id="supply-note"
+                      name="note"
+                      rows="3"
+                      value={supplyFormData.note}
+                      onChange={handleSupplyInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      placeholder="Nhập ghi chú (nếu có)"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSupplyModal(false);
+                        resetSupplyForm();
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 bg-transparent"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={supplyLoading}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {supplyLoading ? (
+                        <>
+                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>
+                          <Package className="h-4 w-4 mr-2" />
+                          Cung cấp
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

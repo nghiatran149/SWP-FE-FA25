@@ -15,9 +15,11 @@ import CustomerManagement from './pages/sc/CustomerManagement';
 import VehicleManagement from './pages/sc/VehicleManagement';
 import TechnicianManagement from './pages/sc/TechnicianManagement';
 import ServiceRecord from './pages/sc/ServiceRecord';
+import AvailablePartManagement from './pages/sc/AvailablePartManagement';
 
 // EVM (Electric Vehicle Manufacturer)
 import WarrantyApproval from './pages/evm/WarrantyApproval';
+import CampaignManagement from './pages/evm/CampaignManagement';
 import PartWarehouseManagement from './pages/evm/PartWarehouseManagement';
 import SupplyChain from './pages/evm/SupplyChain';
 import Reports from './pages/evm/Reports';
@@ -35,6 +37,8 @@ function App() {
                   <HomePage />
                 </ProtectedRoute>
               } />
+
+
               <Route path="/dashboard" element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <Dashboard />
@@ -50,29 +54,32 @@ function App() {
                   <SupplyChain />
                 </ProtectedRoute>
               } />
-              <Route path="/parts" element={
-                <ProtectedRoute allowedRoles={['EVM_STAFF']}>
-                  <PartWarehouseManagement />
-                </ProtectedRoute>
-              } />
+
+
               <Route path="/warranty-approval" element={
                 <ProtectedRoute allowedRoles={['EVM_STAFF']}>
                   <WarrantyApproval />
                 </ProtectedRoute>
               } />
-              <Route path="/customers" element={
-                <ProtectedRoute allowedRoles={['SC_STAFF']}>
-                  <CustomerManagement />
+              <Route path="/campaign-management" element={
+                <ProtectedRoute allowedRoles={['EVM_STAFF']}>
+                  <CampaignManagement />
                 </ProtectedRoute>
               } />
-              <Route path="/service-campaigns" element={
-                <ProtectedRoute allowedRoles={['SC_STAFF']}>
-                  <ServiceCampaigns />
+              <Route path="/part-warehouse" element={
+                <ProtectedRoute allowedRoles={['EVM_STAFF']}>
+                  <PartWarehouseManagement />
                 </ProtectedRoute>
               } />
+
               <Route path="/technicians" element={
                 <ProtectedRoute allowedRoles={['SC_STAFF']}>
                   <TechnicianManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/customers" element={
+                <ProtectedRoute allowedRoles={['SC_STAFF']}>
+                  <CustomerManagement />
                 </ProtectedRoute>
               } />
               <Route path="/vehicles" element={
@@ -85,14 +92,26 @@ function App() {
                   <WarrantyClaims />
                 </ProtectedRoute>
               } />
-              <Route path="/technician-tasks" element={
-                <ProtectedRoute allowedRoles={['SC_TECHNICIAN']}>
-                  <TechnicianTasks />
-                </ProtectedRoute>
-              } />
               <Route path="/service-records" element={
                 <ProtectedRoute allowedRoles={['SC_STAFF']}>
                   <ServiceRecord />
+                </ProtectedRoute>
+              } />
+              <Route path="/service-campaigns" element={
+                <ProtectedRoute allowedRoles={['SC_STAFF']}>
+                  <ServiceCampaigns />
+                </ProtectedRoute>
+              } />
+              <Route path="/available-parts" element={
+                <ProtectedRoute allowedRoles={['SC_STAFF']}>
+                  <AvailablePartManagement />
+                </ProtectedRoute>
+              } />
+
+
+              <Route path="/technician-tasks" element={
+                <ProtectedRoute allowedRoles={['SC_TECHNICIAN']}>
+                  <TechnicianTasks />
                 </ProtectedRoute>
               } />
             </Routes>
