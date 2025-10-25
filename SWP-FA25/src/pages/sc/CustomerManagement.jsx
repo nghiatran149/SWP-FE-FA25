@@ -413,38 +413,37 @@ const CustomerManagement = () => {
         </div>
       </div>
 
-      {/* Customers Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-            <span className="ml-2 text-gray-600">Đang tải dữ liệu...</span>
-          </div>
-        ) : error ? (
-          // <div className="text-center py-12">
-          //   <div className="text-red-600 mb-2">{error}</div>
-          //   <button 
-          //     onClick={() => fetchCustomers()}
-          //     className="text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-          //   >
-          //     Thử lại
-          //   </button>
-          // </div>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+          <span className="ml-3 text-gray-600">Đang tải dữ liệu...</span>
+        </div>
+      )}
 
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-              <span className="text-red-800">{error}</span>
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
               <button
-                onClick={fetchCustomers}
-                className="ml-auto px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                onClick={() => fetchCustomers()}
+                className="mt-2 text-sm px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
               >
                 Thử lại
               </button>
             </div>
           </div>
+        </div>
+      )}
 
-        ) : (
+      {/* Customers Table */}
+      {!loading && !error && (
+      <div className="bg-white shadow rounded-lg overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -569,8 +568,8 @@ const CustomerManagement = () => {
               ))}
             </tbody>
           </table>
-        )}
       </div>
+      )}
 
       {/* Pagination & Summary */}
       <div className="bg-white p-4 rounded-lg shadow">

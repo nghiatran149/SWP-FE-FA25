@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Eye, Edit, Star, Clock, CheckCircle, User, Phone, Mail, Award, Loader2, X, Calendar, Briefcase } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, Star, Clock, CheckCircle, User, Phone, Mail, Award, Loader2, X, Calendar, Briefcase, AlertCircle } from 'lucide-react';
 import api from '../../api/api';
 
 const TechnicianManagement = () => {
@@ -220,20 +220,27 @@ const TechnicianManagement = () => {
       {loading && (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-          <span className="ml-2 text-gray-600">Đang tải dữ liệu...</span>
+          <span className="ml-3 text-gray-600">Đang tải dữ liệu...</span>
         </div>
       )}
 
       {/* Error State */}
-      {error && (
+      {error && !loading && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-sm text-red-800">{error}</p>
-          <button 
-            onClick={fetchTechnicians}
-            className="mt-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-          >
-            Thử lại
-          </button>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+              <button 
+                onClick={fetchTechnicians}
+                className="mt-2 text-sm px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Users, Cog, Calendar, AlertTriangle, AlertCircle, CheckCircle, Car, Loader2, Briefcase, LandPlot, X, FileText, Phone, User, Settings2 } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Users, Settings2, Cog, Calendar, AlertTriangle, AlertCircle, CheckCircle, Car, Loader2, Briefcase, LandPlot, X, FileText, Phone, User } from 'lucide-react';
 import api from '../../api/api';
 
-const ServiceCampaigns = () => {
+const CampaignManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,15 +27,46 @@ const ServiceCampaigns = () => {
   const [analytics, setAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
+  // Add modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'RECALL',
+    description: '',
+    vehicleModel: '',
+    yearFrom: '',
+    yearTo: '',
+    startDate: '',
+    endDate: ''
+  });
+  const [vehicleModels, setVehicleModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    description: '',
+    vehicleModel: '',
+    yearFrom: '',
+    yearTo: '',
+    startDate: '',
+    endDate: '',
+    status: 'DRAFT'
+  });
+
+  // Status change modal state
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusCampaign, setStatusCampaign] = useState(null);
+  const [newStatus, setNewStatus] = useState('');
+
   // Filter state
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
-
-  // Vehicle status change modal state
-  const [showVehicleStatusModal, setShowVehicleStatusModal] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [vehicleStatusLoading, setVehicleStatusLoading] = useState(false);
-  const [newVehicleStatus, setNewVehicleStatus] = useState('');
 
   // Fetch campaigns from API
   const fetchCampaigns = async (page = 0, size = 10) => {
@@ -82,6 +113,24 @@ const ServiceCampaigns = () => {
     fetchCampaigns(currentPage, pageSize);
     fetchAnalytics();
   }, [currentPage, pageSize]);
+
+  // Fetch vehicle models from API
+  const fetchVehicleModels = async () => {
+    try {
+      setModelsLoading(true);
+      const response = await api.get('/admin/models');
+      
+      if (response.status === 200 && Array.isArray(response.data)) {
+        // Lọc các model đang active
+        const activeModels = response.data.filter(model => model.isActive);
+        setVehicleModels(activeModels);
+      }
+    } catch (err) {
+      console.error('Error fetching vehicle models:', err);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -250,7 +299,7 @@ const ServiceCampaigns = () => {
   // Group vehicles by customer
   const groupVehiclesByCustomer = (vehicles) => {
     const grouped = vehicles.reduce((acc, vehicle) => {
-      const key = `${vehicle.customerName}_${vehicle.customerPhone}`;
+      const key = `${vehicle.customerName}-${vehicle.customerPhone}`;
       if (!acc[key]) {
         acc[key] = {
           customerName: vehicle.customerName,
@@ -264,67 +313,218 @@ const ServiceCampaigns = () => {
     return Object.values(grouped);
   };
 
-  // Handle open vehicle status modal
-  const handleOpenVehicleStatusModal = (vehicle) => {
-    setSelectedVehicle(vehicle);
-    setNewVehicleStatus('');
-    setShowVehicleStatusModal(true);
+  // Handle form input change
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // Get available vehicle status options based on current status
-  const getAvailableVehicleStatuses = (currentStatus) => {
-    switch (currentStatus) {
-      case 'IDENTIFIED':
-        return ['NOTIFIED', 'COMPLETED'];
-      case 'NOTIFIED':
-        return ['COMPLETED'];
-      case 'COMPLETED':
-        return []; // No changes allowed
-      default:
-        return ['IDENTIFIED', 'NOTIFIED', 'COMPLETED'];
+  // Handle edit form input change
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle add campaign
+  const handleAddCampaign = async () => {
+    try {
+      setAddLoading(true);
+      setError(null);
+
+      // Validate form
+      if (!formData.name.trim()) {
+        setError('Vui lòng nhập tên chiến dịch');
+        return;
+      }
+      if (!formData.startDate || !formData.endDate) {
+        setError('Vui lòng chọn ngày bắt đầu và kết thúc');
+        return;
+      }
+      if (!formData.vehicleModel) {
+        setError('Vui lòng chọn model xe');
+        return;
+      }
+
+      const requestBody = {
+        name: formData.name,
+        type: formData.type,
+        description: formData.description,
+        vehicleModels: [formData.vehicleModel],
+        yearFrom: formData.yearFrom ? parseInt(formData.yearFrom) : 0,
+        yearTo: formData.yearTo ? parseInt(formData.yearTo) : 0,
+        startDate: formData.startDate,
+        endDate: formData.endDate
+      };
+
+      const response = await api.post('/campaigns', requestBody);
+
+      if (response.status === 200 || response.status === 201) {
+        // Reset form
+        setFormData({
+          name: '',
+          type: 'RECALL',
+          description: '',
+          vehicleModel: '',
+          yearFrom: '',
+          yearTo: '',
+          startDate: '',
+          endDate: ''
+        });
+        setShowAddModal(false);
+        
+        // Refresh campaigns list
+        fetchCampaigns(currentPage, pageSize);
+        fetchAnalytics();
+      }
+    } catch (err) {
+      console.error('Error adding campaign:', err);
+      setError(err.response?.data?.message || 'Không thể tạo chiến dịch. Vui lòng thử lại.');
+    } finally {
+      setAddLoading(false);
     }
   };
 
-  // Handle change vehicle status
-  const handleChangeVehicleStatus = async () => {
+  // Handle edit campaign - open modal and load data
+  const handleEditCampaign = async (campaign) => {
     try {
-      setVehicleStatusLoading(true);
+      setEditingCampaign(campaign);
+      setEditFormData({
+        name: campaign.name || '',
+        description: campaign.description || '',
+        vehicleModel: campaign.vehicleModel || '',
+        yearFrom: campaign.yearFrom || '',
+        yearTo: campaign.yearTo || '',
+        startDate: campaign.startDate || '',
+        endDate: campaign.endDate || '',
+        status: campaign.status || 'DRAFT'
+      });
+      setShowEditModal(true);
+      await fetchVehicleModels();
+    } catch (err) {
+      console.error('Error opening edit modal:', err);
+      setError('Không thể mở form chỉnh sửa.');
+    }
+  };
+
+  // Handle update campaign
+  const handleUpdateCampaign = async () => {
+    try {
+      setEditLoading(true);
       setError(null);
 
-      if (!newVehicleStatus) {
+      // Validate form
+      if (!editFormData.name.trim()) {
+        setError('Vui lòng nhập tên chiến dịch');
+        return;
+      }
+      if (!editFormData.startDate || !editFormData.endDate) {
+        setError('Vui lòng chọn ngày bắt đầu và kết thúc');
+        return;
+      }
+      if (!editFormData.vehicleModel) {
+        setError('Vui lòng chọn model xe');
+        return;
+      }
+
+      const requestBody = {
+        name: editFormData.name,
+        description: editFormData.description,
+        vehicleModels: [editFormData.vehicleModel],
+        yearFrom: editFormData.yearFrom ? parseInt(editFormData.yearFrom) : 0,
+        yearTo: editFormData.yearTo ? parseInt(editFormData.yearTo) : 0,
+        startDate: editFormData.startDate,
+        endDate: editFormData.endDate,
+        status: editFormData.status
+      };
+
+      const response = await api.put(`/campaigns/${editingCampaign.campaignId}`, requestBody);
+
+      if (response.status === 200 || response.status === 204) {
+        // Reset form
+        setEditFormData({
+          name: '',
+          description: '',
+          vehicleModel: '',
+          yearFrom: '',
+          yearTo: '',
+          startDate: '',
+          endDate: '',
+          status: 'DRAFT'
+        });
+        setShowEditModal(false);
+        setEditingCampaign(null);
+        
+        // Refresh campaigns list
+        fetchCampaigns(currentPage, pageSize);
+        fetchAnalytics();
+      }
+    } catch (err) {
+      console.error('Error updating campaign:', err);
+      setError(err.response?.data?.message || 'Không thể cập nhật chiến dịch. Vui lòng thử lại.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Handle open status modal
+  const handleOpenStatusModal = (campaign) => {
+    setStatusCampaign(campaign);
+    setNewStatus(''); // Don't pre-select, force user to choose
+    setShowStatusModal(true);
+  };
+
+  // Get available status options based on current status
+  const getAvailableStatuses = (currentStatus) => {
+    switch (currentStatus) {
+      case 'ACTIVE':
+        return ['COMPLETED'];
+      case 'DRAFT':
+        return ['ACTIVE', 'CANCELLED'];
+      case 'CANCELLED':
+      case 'COMPLETED':
+        return []; // No changes allowed
+      default:
+        return [];
+    }
+  };
+
+  // Handle change status
+  const handleChangeStatus = async () => {
+    try {
+      setStatusLoading(true);
+      setError(null);
+
+      if (!newStatus) {
         setError('Vui lòng chọn trạng thái');
         return;
       }
 
       const requestBody = {
-        status: newVehicleStatus
+        status: newStatus
       };
 
-      const response = await api.put(`/campaigns/campaign-vehicles/${selectedVehicle.vin}/status`, requestBody);
+      const response = await api.put(`/campaigns/${statusCampaign.campaignId}/status`, requestBody);
 
       if (response.status === 200 || response.status === 204) {
-        setShowVehicleStatusModal(false);
-        setSelectedVehicle(null);
-        setNewVehicleStatus('');
+        setShowStatusModal(false);
+        setStatusCampaign(null);
+        setNewStatus('');
         
-        // Refresh vehicles list and campaign detail to update progress
-        if (selectedCampaign) {
-          await fetchCampaignVehicles(selectedCampaign.campaignId);
-          // Reload campaign detail to get updated statistics
-          const campaignResponse = await api.get(`/campaigns/${selectedCampaign.campaignId}`);
-          if (campaignResponse.status === 200) {
-            setSelectedCampaign(campaignResponse.data);
-          }
-        }
-        // Refresh analytics and campaigns list
-        fetchAnalytics();
+        // Refresh campaigns list
         fetchCampaigns(currentPage, pageSize);
+        fetchAnalytics();
       }
     } catch (err) {
-      console.error('Error changing vehicle status:', err);
-      setError(err.response?.data?.message || 'Không thể thay đổi trạng thái xe. Vui lòng thử lại.');
+      console.error('Error changing status:', err);
+      setError(err.response?.data?.message || 'Không thể thay đổi trạng thái. Vui lòng thử lại.');
     } finally {
-      setVehicleStatusLoading(false);
+      setStatusLoading(false);
     }
   };
 
@@ -338,10 +538,16 @@ const ServiceCampaigns = () => {
             Theo dõi các chiến dịch triệu hồi, dịch vụ và bảo dưỡng
           </p>
         </div>
-        {/* <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600">
+        <button 
+          onClick={() => {
+            setShowAddModal(true);
+            fetchVehicleModels();
+          }}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Tạo chiến dịch mới
-        </button> */}
+        </button>
       </div>
 
       {/* Loading State */}
@@ -607,11 +813,8 @@ const ServiceCampaigns = () => {
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full ${
-                            getCompletionPercentage(campaign.completionRate) === 100 
-                              ? 'bg-green-500' 
-                              : 'bg-yellow-400'
-                          }`}
+                          className={`h-2 rounded-full ${campaign.status === 'COMPLETED' ? 'bg-green-500' : 'bg-yellow-400'
+                            }`}
                           style={{
                             width: `${getCompletionPercentage(campaign.completionRate)}%`
                           }}
@@ -627,9 +830,24 @@ const ServiceCampaigns = () => {
                     >
                       <Eye className="h-4 w-4" />
                     </button>
-                    {/* <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
-                      <Edit className="h-4 w-4" />
-                    </button> */}
+                    {/* Chỉ hiển thị nút Edit khi status không phải CANCELLED */}
+                    {campaign.status !== 'CANCELLED' && (
+                      <button 
+                        onClick={() => handleEditCampaign(campaign)}
+                        className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                    )}
+                    {/* Chỉ hiển thị nút Settings khi status không phải CANCELLED hoặc COMPLETED */}
+                    {campaign.status !== 'CANCELLED' && campaign.status !== 'COMPLETED' && (
+                      <button 
+                        onClick={() => handleOpenStatusModal(campaign)}
+                        className="p-2 text-white hover:text-white hover:bg-green-600 rounded-md bg-green-500 border border-gray-500"
+                      >
+                        <Settings2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -978,21 +1196,9 @@ const ServiceCampaigns = () => {
                                             )}
                                           </div>
                                         </div>
-                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getVehicleStatusColor(vehicle.status)}`}>
-                                            {getVehicleStatusText(vehicle.status)}
-                                          </span>
-                                          {/* Chỉ hiển thị nút Settings khi status không phải COMPLETED */}
-                                          {vehicle.status !== 'COMPLETED' && (
-                                            <button
-                                              onClick={() => handleOpenVehicleStatusModal(vehicle)}
-                                              className="p-1.5 text-white hover:bg-green-600 rounded-md bg-green-500 border border-gray-300 transition-colors"
-                                              title="Thay đổi trạng thái"
-                                            >
-                                              <Settings2 className="h-3.5 w-3.5" />
-                                            </button>
-                                          )}
-                                        </div>
+                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${getVehicleStatusColor(vehicle.status)}`}>
+                                          {getVehicleStatusText(vehicle.status)}
+                                        </span>
                                       </div>
                                     </div>
                                   ))}
@@ -1035,8 +1241,461 @@ const ServiceCampaigns = () => {
         </div>
       )}
 
-      {/* Modal thay đổi trạng thái xe */}
-      {showVehicleStatusModal && selectedVehicle && (
+      {/* Modal thêm chiến dịch mới */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Tạo chiến dịch mới</h3>
+                    <p className="text-sm text-gray-500 mt-1">Điền thông tin để tạo chiến dịch mới</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setFormData({
+                        name: '',
+                        type: 'RECALL',
+                        description: '',
+                        vehicleModel: '',
+                        yearFrom: '',
+                        yearTo: '',
+                        startDate: '',
+                        endDate: ''
+                      });
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Form - 2 Columns */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Cột trái */}
+                  <div className="space-y-6">
+                    {/* Tên chiến dịch */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tên chiến dịch <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        placeholder="Nhập tên chiến dịch"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+
+                    {/* Loại chiến dịch */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Loại chiến dịch <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="type"
+                        value={formData.type}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      >
+                        <option value="RECALL">Triệu hồi</option>
+                        <option value="SERVICE">Dịch vụ</option>
+                        {/* <option value="MAINTENANCE">Bảo dưỡng</option> */}
+                      </select>
+                    </div>
+
+                    {/* Model xe */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Model xe <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="vehicleModel"
+                        value={formData.vehicleModel}
+                        onChange={handleInputChange}
+                        disabled={modelsLoading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">
+                          {modelsLoading ? 'Đang tải...' : 'Chọn model xe'}
+                        </option>
+                        {vehicleModels.map((model) => (
+                          <option key={model.id} value={model.modelName}>
+                            {model.modelName} ({model.brand} - {model.year})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Năm sản xuất */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Năm từ
+                        </label>
+                        <input
+                          type="number"
+                          name="yearFrom"
+                          value={formData.yearFrom}
+                          onChange={handleInputChange}
+                          min="2000"
+                          max="2100"
+                          placeholder="2020"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Năm đến
+                        </label>
+                        <input
+                          type="number"
+                          name="yearTo"
+                          value={formData.yearTo}
+                          onChange={handleInputChange}
+                          min="2000"
+                          max="2100"
+                          placeholder="2025"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cột phải */}
+                  <div className="space-y-6">
+                    {/* Mô tả */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Mô tả
+                      </label>
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows={6}
+                        placeholder="Nhập mô tả chi tiết về chiến dịch"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+
+                    {/* Ngày bắt đầu và kết thúc */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ngày bắt đầu <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="startDate"
+                          value={formData.startDate}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ngày kết thúc <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="endDate"
+                          value={formData.endDate}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddCampaign}
+                  disabled={addLoading}
+                  className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {addLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Đang tạo...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Tạo chiến dịch
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setFormData({
+                      name: '',
+                      type: 'RECALL',
+                      description: '',
+                      vehicleModel: '',
+                      yearFrom: '',
+                      yearTo: '',
+                      startDate: '',
+                      endDate: ''
+                    });
+                  }}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chỉnh sửa chiến dịch */}
+      {showEditModal && editingCampaign && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Chỉnh sửa chiến dịch</h3>
+                    <p className="text-sm text-gray-500 mt-1">Mã: {editingCampaign.campaignId}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingCampaign(null);
+                      setEditFormData({
+                        name: '',
+                        description: '',
+                        vehicleModel: '',
+                        yearFrom: '',
+                        yearTo: '',
+                        startDate: '',
+                        endDate: '',
+                        status: 'DRAFT'
+                      });
+                    }}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Form - 2 Columns */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Cột trái */}
+                  <div className="space-y-6">
+                    {/* Tên chiến dịch */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tên chiến dịch <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={editFormData.name}
+                        onChange={handleEditInputChange}
+                        placeholder="Nhập tên chiến dịch"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                      />
+                    </div>
+
+                    {/* Trạng thái */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Trạng thái <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="status"
+                        value={editFormData.status}
+                        onChange={handleEditInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                      >
+                        <option value="DRAFT">Bản nháp</option>
+                        <option value="ACTIVE">Đang thực hiện</option>
+                        <option value="COMPLETED">Hoàn thành</option>
+                        <option value="CANCELLED">Đã hủy</option>
+                      </select>
+                    </div>
+
+                    {/* Model xe */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Model xe <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="vehicleModel"
+                        value={editFormData.vehicleModel}
+                        onChange={handleEditInputChange}
+                        disabled={modelsLoading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">
+                          {modelsLoading ? 'Đang tải...' : 'Chọn model xe'}
+                        </option>
+                        {vehicleModels.map((model) => (
+                          <option key={model.id} value={model.modelName}>
+                            {model.modelName} ({model.brand} - {model.year})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Năm sản xuất */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Năm từ
+                        </label>
+                        <input
+                          type="number"
+                          name="yearFrom"
+                          value={editFormData.yearFrom}
+                          onChange={handleEditInputChange}
+                          min="2000"
+                          max="2100"
+                          placeholder="2020"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Năm đến
+                        </label>
+                        <input
+                          type="number"
+                          name="yearTo"
+                          value={editFormData.yearTo}
+                          onChange={handleEditInputChange}
+                          min="2000"
+                          max="2100"
+                          placeholder="2025"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cột phải */}
+                  <div className="space-y-6">
+                    {/* Mô tả */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Mô tả
+                      </label>
+                      <textarea
+                        name="description"
+                        value={editFormData.description}
+                        onChange={handleEditInputChange}
+                        rows={6}
+                        placeholder="Nhập mô tả chi tiết về chiến dịch"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                      />
+                    </div>
+
+                    {/* Ngày bắt đầu và kết thúc */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ngày bắt đầu <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="startDate"
+                          value={editFormData.startDate}
+                          onChange={handleEditInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ngày kết thúc <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="endDate"
+                          value={editFormData.endDate}
+                          onChange={handleEditInputChange}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
+                <button
+                  type="button"
+                  onClick={handleUpdateCampaign}
+                  disabled={editLoading}
+                  className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Đang cập nhật...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Cập nhật
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingCampaign(null);
+                    setEditFormData({
+                      name: '',
+                      description: '',
+                      vehicleModel: '',
+                      yearFrom: '',
+                      yearTo: '',
+                      startDate: '',
+                      endDate: '',
+                      status: 'DRAFT'
+                    });
+                  }}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal thay đổi trạng thái */}
+      {showStatusModal && statusCampaign && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
@@ -1055,16 +1714,16 @@ const ServiceCampaigns = () => {
                         <Settings2 className="h-6 w-6 text-green-600" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-bold text-gray-900">Thay đổi trạng thái xe</h3>
-                        <p className="text-sm text-gray-500 mt-1">{selectedVehicle.vin}</p>
+                        <h3 className="text-lg font-bold text-gray-900">Thay đổi trạng thái</h3>
+                        <p className="text-sm text-gray-500 mt-1">{statusCampaign.name}</p>
                       </div>
                     </div>
                   </div>
                   <button
                     onClick={() => {
-                      setShowVehicleStatusModal(false);
-                      setSelectedVehicle(null);
-                      setNewVehicleStatus('');
+                      setShowStatusModal(false);
+                      setStatusCampaign(null);
+                      setNewStatus('');
                     }}
                     className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
                   >
@@ -1072,23 +1731,13 @@ const ServiceCampaigns = () => {
                   </button>
                 </div>
 
-                {/* Vehicle Info */}
+                {/* Current Status */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Model:</span>
-                      <span className="font-medium text-gray-900">{selectedVehicle.modelName} • {selectedVehicle.year}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Khách hàng:</span>
-                      <span className="font-medium text-gray-900">{selectedVehicle.customerName}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Trạng thái hiện tại:</span>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getVehicleStatusColor(selectedVehicle.status)}`}>
-                        {getVehicleStatusText(selectedVehicle.status)}
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Trạng thái hiện tại:</span>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(statusCampaign.status)}`}>
+                      {getStatusText(statusCampaign.status)}
+                    </span>
                   </div>
                 </div>
 
@@ -1098,58 +1747,58 @@ const ServiceCampaigns = () => {
                     Chọn trạng thái mới <span className="text-red-500">*</span>
                   </label>
                   <div className="space-y-3">
-                    {getAvailableVehicleStatuses(selectedVehicle.status).includes('IDENTIFIED') && (
+                    {getAvailableStatuses(statusCampaign.status).includes('DRAFT') && (
                       <label className="relative flex items-center p-4 cursor-pointer bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <input
                           type="radio"
-                          name="vehicleStatus"
-                          value="IDENTIFIED"
-                          checked={newVehicleStatus === 'IDENTIFIED'}
-                          onChange={(e) => setNewVehicleStatus(e.target.value)}
+                          name="status"
+                          value="DRAFT"
+                          checked={newStatus === 'DRAFT'}
+                          onChange={(e) => setNewStatus(e.target.value)}
                           className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
                         />
                         <div className="ml-3 flex-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium text-gray-900">Đã xác định</span>
+                            <span className="font-medium text-gray-900">Bản nháp</span>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                              DRAFT
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">Chiến dịch đang được chuẩn bị</p>
+                        </div>
+                      </label>
+                    )}
+
+                    {getAvailableStatuses(statusCampaign.status).includes('ACTIVE') && (
+                      <label className="relative flex items-center p-4 cursor-pointer bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <input
+                          type="radio"
+                          name="status"
+                          value="ACTIVE"
+                          checked={newStatus === 'ACTIVE'}
+                          onChange={(e) => setNewStatus(e.target.value)}
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900">Đang thực hiện</span>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                              IDENTIFIED
+                              ACTIVE
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1">Xe đã được xác định cần dịch vụ</p>
+                          <p className="text-sm text-gray-500 mt-1">Chiến dịch đang được triển khai</p>
                         </div>
                       </label>
                     )}
 
-                    {getAvailableVehicleStatuses(selectedVehicle.status).includes('NOTIFIED') && (
+                    {getAvailableStatuses(statusCampaign.status).includes('COMPLETED') && (
                       <label className="relative flex items-center p-4 cursor-pointer bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <input
                           type="radio"
-                          name="vehicleStatus"
-                          value="NOTIFIED"
-                          checked={newVehicleStatus === 'NOTIFIED'}
-                          onChange={(e) => setNewVehicleStatus(e.target.value)}
-                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
-                        />
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-gray-900">Đã thông báo</span>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
-                              NOTIFIED
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-500 mt-1">Đã gửi thông báo cho khách hàng</p>
-                        </div>
-                      </label>
-                    )}
-
-                    {getAvailableVehicleStatuses(selectedVehicle.status).includes('COMPLETED') && (
-                      <label className="relative flex items-center p-4 cursor-pointer bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <input
-                          type="radio"
-                          name="vehicleStatus"
+                          name="status"
                           value="COMPLETED"
-                          checked={newVehicleStatus === 'COMPLETED'}
-                          onChange={(e) => setNewVehicleStatus(e.target.value)}
+                          checked={newStatus === 'COMPLETED'}
+                          onChange={(e) => setNewStatus(e.target.value)}
                           className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
                         />
                         <div className="ml-3 flex-1">
@@ -1159,7 +1808,29 @@ const ServiceCampaigns = () => {
                               COMPLETED
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500 mt-1">Đã hoàn thành dịch vụ</p>
+                          <p className="text-sm text-gray-500 mt-1">Chiến dịch đã kết thúc thành công</p>
+                        </div>
+                      </label>
+                    )}
+
+                    {getAvailableStatuses(statusCampaign.status).includes('CANCELLED') && (
+                      <label className="relative flex items-center p-4 cursor-pointer bg-white border-2 border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                        <input
+                          type="radio"
+                          name="status"
+                          value="CANCELLED"
+                          checked={newStatus === 'CANCELLED'}
+                          onChange={(e) => setNewStatus(e.target.value)}
+                          className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                        />
+                        <div className="ml-3 flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-900">Đã hủy</span>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                              CANCELLED
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">Chiến dịch đã bị hủy bỏ</p>
                         </div>
                       </label>
                     )}
@@ -1171,11 +1842,11 @@ const ServiceCampaigns = () => {
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3">
                 <button
                   type="button"
-                  onClick={handleChangeVehicleStatus}
-                  disabled={vehicleStatusLoading || !newVehicleStatus}
+                  onClick={handleChangeStatus}
+                  disabled={statusLoading || !newStatus}
                   className="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {vehicleStatusLoading ? (
+                  {statusLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Đang cập nhật...
@@ -1190,9 +1861,9 @@ const ServiceCampaigns = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowVehicleStatusModal(false);
-                    setSelectedVehicle(null);
-                    setNewVehicleStatus('');
+                    setShowStatusModal(false);
+                    setStatusCampaign(null);
+                    setNewStatus('');
                   }}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
                 >
@@ -1207,4 +1878,4 @@ const ServiceCampaigns = () => {
   );
 };
 
-export default ServiceCampaigns;
+export default CampaignManagement;

@@ -48,11 +48,12 @@ const Layout = ({ children }) => {
     { name: 'Báo cáo & Phân tích', href: '/reports', icon: BarChart3, roles: ['ADMIN'] },
     { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck, roles: ['ADMIN'] },
 
-    { name: 'Duyệt yêu cầu bảo hành', href: '/warranty-approval', icon: CheckCircle, roles: ['EVM_STAFF'] },
-    { name: 'Kho phụ tùng', href: '/parts', icon: Package, roles: ['EVM_STAFF'] },
+    { name: 'Duyệt yêu cầu', href: '/warranty-approval', icon: CheckCircle, roles: ['EVM_STAFF'] },
+    { name: 'Quản lý chiến dịch', href: '/campaign-management', icon: Megaphone, roles: ['EVM_STAFF'] },
+    { name: 'Kho phụ tùng', href: '/part-warehouse', icon: Package, roles: ['EVM_STAFF'] },
     
-    { name: 'Quản lý khách hàng', href: '/customers', icon: User, roles: ['SC_STAFF'] },
     { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
+    { name: 'Quản lý khách hàng', href: '/customers', icon: User, roles: ['SC_STAFF'] },
     { name: 'Quản lý xe', href: '/vehicles', icon: Car, roles: ['SC_STAFF'] },
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield, roles: ['SC_STAFF'] },
     { name: 'Lịch sử dịch vụ', href: '/service-records', icon: FileText, roles: ['SC_STAFF'] },
