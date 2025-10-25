@@ -16,6 +16,7 @@ import VehicleManagement from './pages/sc/VehicleManagement';
 import TechnicianManagement from './pages/sc/TechnicianManagement';
 import ServiceRecord from './pages/sc/ServiceRecord';
 import AvailablePartManagement from './pages/sc/AvailablePartManagement';
+import DefectivePartManagement from './pages/sc/DefectivePartManagement';
 
 // EVM (Electric Vehicle Manufacturer)
 import WarrantyApproval from './pages/evm/WarrantyApproval';
@@ -105,6 +106,11 @@ function App() {
               <Route path="/available-parts" element={
                 <ProtectedRoute allowedRoles={['SC_STAFF']}>
                   <AvailablePartManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/defective-parts" element={
+                <ProtectedRoute allowedRoles={['SC_STAFF']}>
+                  <DefectivePartManagement />
                 </ProtectedRoute>
               } />
 
