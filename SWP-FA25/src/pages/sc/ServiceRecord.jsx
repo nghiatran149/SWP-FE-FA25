@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Calendar, User, Car, FileText, Wrench, Clock, Replace, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { Search, Eye, Calendar, User, Car, FileText, Wrench, Replace, AlertCircle, X } from 'lucide-react';
 import api from '../../api/api';
 
 const ServiceRecord = () => {
@@ -10,7 +10,7 @@ const ServiceRecord = () => {
 
   // State cho tìm kiếm và filter
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [serviceTypeFilter, setServiceTypeFilter] = useState('all');
 
   // State cho modal xem chi tiết
   const [showViewModal, setShowViewModal] = useState(false);
@@ -65,48 +65,12 @@ const ServiceRecord = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'IN_PROGRESS':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'PENDING':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'Hoàn thành';
-      case 'IN_PROGRESS':
-        return 'Đang xử lý';
-      case 'PENDING':
-        return 'Chờ xử lý';
-      case 'CANCELLED':
-        return 'Đã hủy';
-      default:
-        return status;
-    }
-  };
-
   const getServiceTypeColor = (type) => {
     switch (type) {
       case 'WARRANTY_REPAIR':
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'WARRANTY_REPLACE':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      // case 'MAINTENANCE':
-      //   return 'bg-teal-100 text-teal-800 border-teal-200';
-      // case 'REPAIR':
-      //   return 'bg-orange-100 text-orange-800 border-orange-200';
-      // case 'RECALL':
-      //   return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -116,14 +80,8 @@ const ServiceRecord = () => {
     switch (type) {
       case 'WARRANTY_REPAIR':
         return 'Sửa chữa bảo hành';
-        case 'WARRANTY_REPLACE':
+      case 'WARRANTY_REPLACE':
         return 'Thay thế bảo hành';
-      // case 'MAINTENANCE':
-      //   return 'Bảo dưỡng';
-      // case 'REPAIR':
-      //   return 'Sửa chữa';
-      // case 'RECALL':
-      //   return 'Triệu hồi';
       default:
         return type || 'N/A';
     }
@@ -143,9 +101,9 @@ const ServiceRecord = () => {
       record.vehicleModel?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       record.technicianName?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || record.serviceStatus === statusFilter;
+    const matchesServiceType = serviceTypeFilter === 'all' || record.serviceType === serviceTypeFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesServiceType;
   });
 
   return (
@@ -159,7 +117,7 @@ const ServiceRecord = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -170,24 +128,6 @@ const ServiceRecord = () => {
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Tổng số dịch vụ</dt>
                   <dd className="text-2xl font-semibold text-gray-900">{serviceRecords.length}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <CheckCircle className="h-6 w-6 text-green-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Đã hoàn thành</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">
-                    {serviceRecords.filter(r => r.serviceStatus === 'COMPLETED').length}
-                  </dd>
                 </dl>
               </div>
             </div>
@@ -270,7 +210,7 @@ const ServiceRecord = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Tìm kiếm theo mã dịch vụ, VIN, khách hàng, kỹ thuật viên..."
+                    placeholder="Tìm kiếm theo mã dịch vụ, VIN, model xe, kỹ thuật viên..."
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -280,14 +220,12 @@ const ServiceRecord = () => {
               <div className="flex gap-2">
                 <select
                   className="px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  value={serviceTypeFilter}
+                  onChange={(e) => setServiceTypeFilter(e.target.value)}
                 >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="COMPLETED">Hoàn thành</option>
-                  <option value="IN_PROGRESS">Đang xử lý</option>
-                  <option value="PENDING">Chờ xử lý</option>
-                  <option value="CANCELLED">Đã hủy</option>
+                  <option value="all">Tất cả loại dịch vụ</option>
+                  <option value="WARRANTY_REPAIR">Sửa chữa bảo hành</option>
+                  <option value="WARRANTY_REPLACE">Thay thế bảo hành</option>
                 </select>
               </div>
             </div>
@@ -322,9 +260,6 @@ const ServiceRecord = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Ngày & Chi phí
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Trạng thái
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Thao tác
@@ -387,11 +322,6 @@ const ServiceRecord = () => {
                         <div className="text-xs text-gray-500 mt-1">
                           Chi phí: {record.cost?.toLocaleString() || 0} VNĐ
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(record.serviceStatus)}`}>
-                          {getStatusText(record.serviceStatus)}
-                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
@@ -479,12 +409,6 @@ const ServiceRecord = () => {
                             </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-sm font-medium text-gray-700">Trạng thái:</span>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(selectedRecord.serviceStatus)}`}>
-                              {getStatusText(selectedRecord.serviceStatus)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">Ngày dịch vụ:</span>
                             <span className="text-sm text-gray-900">{formatDate(selectedRecord.serviceDate)}</span>
                           </div>
@@ -542,6 +466,20 @@ const ServiceRecord = () => {
                           </div>
                         </div>
                       </div>
+
+                      {/* Chi phí */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
+                          <FileText className="h-5 w-5 mr-2 text-green-500" />
+                          Chi phí
+                        </h4>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-gray-700">Tổng chi phí:</span>
+                          <span className="text-lg font-bold text-green-600">
+                            {selectedRecord.cost?.toLocaleString() || 0} VNĐ
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Mô tả công việc */}
@@ -582,9 +520,8 @@ const ServiceRecord = () => {
                                     )}
                                   </div>
                                   <div>
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                      part.installed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                    }`}>
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${part.installed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                      }`}>
                                       {part.installed ? 'Đã lắp' : 'Chưa lắp'}
                                     </span>
                                   </div>
@@ -596,21 +533,7 @@ const ServiceRecord = () => {
                       </div>
                     )}
 
-                    {/* Chi phí */}
-                    <div className="mt-6">
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                          <FileText className="h-5 w-5 mr-2 text-green-500" />
-                          Chi phí
-                        </h4>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-700">Tổng chi phí:</span>
-                          <span className="text-lg font-bold text-green-600">
-                            {selectedRecord.cost?.toLocaleString() || 0} VNĐ
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+
                   </div>
                 ) : (
                   <div className="text-center py-8">
