@@ -1,6 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Eye, Calendar, User, Car, Check, X, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Image, UserPlus, Wrench } from 'lucide-react';
 import api from '../../api/api';
+
+// Helper functions
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'COMPLETED':
+    case 'PROCESSING':
+    case 'PROCESS':
+    case 'APPROVED':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'REJECTED':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'PENDING':
+      return 'bg-orange-100 text-orange-800 border-orange-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+const getStatusText = (status) => {
+  switch (status) {
+    case 'COMPLETED':
+    case 'PROCESSING':
+    case 'PROCESS':
+    case 'APPROVED':
+      return 'Đã chấp nhận';
+    case 'REJECTED':
+      return 'Đã từ chối';
+    case 'PENDING':
+      return 'Chờ duyệt';
+    default:
+      return status;
+  }
+};
 
 // Component bảng yêu cầu chờ duyệt
 const PendingApprovalTable = ({ 
@@ -14,7 +47,8 @@ const PendingApprovalTable = ({
   onOpenRejectModal, 
   onViewClaim,
   getStatusColor,
-  getStatusText
+  getStatusText,
+  Pagination
 }) => (
   <>
     {/* Title */}
@@ -182,6 +216,9 @@ const PendingApprovalTable = ({
           </tbody>
         </table>
       )}
+      
+      {/* Pagination */}
+      {claims.length > 0 && <Pagination />}
     </div>
   </>
 );
@@ -196,7 +233,8 @@ const ProcessedTable = ({
   title, 
   onViewClaim,
   getStatusColor,
-  getStatusText
+  getStatusText,
+  Pagination
 }) => (
   <>
     {/* Title */}
@@ -360,6 +398,9 @@ const ProcessedTable = ({
           </tbody>
         </table>
       )}
+      
+      {/* Pagination */}
+      {claims.length > 0 && <Pagination />}
     </div>
   </>
 );
@@ -433,11 +474,11 @@ const WarrantyApproval = () => {
   }, [currentPage, pageSize]);
 
   // Function để mở modal approve
-  const handleOpenApproveModal = (claim) => {
+  const handleOpenApproveModal = useCallback((claim) => {
     setSelectedClaim(claim);
     setApprovalNotes('');
     setShowApproveModal(true);
-  };
+  }, []);
 
   // Function để approve warranty claim
   const handleApproveClaim = async () => {
@@ -454,7 +495,7 @@ const WarrantyApproval = () => {
         setShowApproveModal(false);
         setSelectedClaim(null);
         setApprovalNotes('');
-        fetchWarrantyClaims();
+        fetchWarrantyClaims(currentPage, pageSize);
         alert('Yêu cầu bảo hành đã được phê duyệt thành công!');
       }
     } catch (err) {
@@ -473,11 +514,11 @@ const WarrantyApproval = () => {
   };
 
   // Function để mở modal reject
-  const handleOpenRejectModal = (claim) => {
+  const handleOpenRejectModal = useCallback((claim) => {
     setSelectedClaim(claim);
     setRejectionReason('');
     setShowRejectModal(true);
-  };
+  }, []);
 
   // Function để reject warranty claim
   const handleRejectClaim = async () => {
@@ -494,7 +535,7 @@ const WarrantyApproval = () => {
         setShowRejectModal(false);
         setSelectedClaim(null);
         setRejectionReason('');
-        fetchWarrantyClaims();
+        fetchWarrantyClaims(currentPage, pageSize);
         alert('Yêu cầu bảo hành đã được từ chối!');
       }
     } catch (err) {
@@ -513,7 +554,7 @@ const WarrantyApproval = () => {
   };
 
   // Hàm xem chi tiết claim
-  const handleViewClaim = async (claimId) => {
+  const handleViewClaim = useCallback(async (claimId) => {
     try {
       setViewLoading(true);
       setSelectedViewClaim(null);
@@ -531,7 +572,7 @@ const WarrantyApproval = () => {
     } finally {
       setViewLoading(false);
     }
-  };
+  }, []);
 
   // Phân loại yêu cầu bảo hành theo status (ẩn SELF_SERVICE)
   const pendingApprovalClaims = warrantyClaims.filter(claim => 
@@ -546,38 +587,6 @@ const WarrantyApproval = () => {
     claim.claimStatus === 'COMPLETED') &&
     claim.processingType !== 'SELF_SERVICE'
   );
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'COMPLETED':
-      case 'PROCESSING':
-      case 'PROCESS':
-      case 'APPROVED':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'PENDING':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'COMPLETED':
-      case 'PROCESSING':
-      case 'PROCESS':
-      case 'APPROVED':
-        return 'Đã chấp nhận';
-      case 'REJECTED':
-        return 'Đã từ chối';
-      case 'PENDING':
-        return 'Chờ duyệt';
-      default:
-        return status;
-    }
-  };
 
   // Pagination handlers
   const handlePageChange = (newPage) => {
@@ -623,7 +632,7 @@ const WarrantyApproval = () => {
             <option value={5}>5 / trang</option>
             <option value={10}>10 / trang</option>
             <option value={20}>20 / trang</option>
-            {/* <option value={50}>50 / trang</option> */}
+            <option value={50}>50 / trang</option>
           </select>
         </div>
         <div>
@@ -742,6 +751,7 @@ const WarrantyApproval = () => {
               onViewClaim={handleViewClaim}
               getStatusColor={getStatusColor}
               getStatusText={getStatusText}
+              Pagination={Pagination}
             />
           </div>
 
@@ -757,6 +767,7 @@ const WarrantyApproval = () => {
               onViewClaim={handleViewClaim}
               getStatusColor={getStatusColor}
               getStatusText={getStatusText}
+              Pagination={Pagination}
             />
           </div>
         </>

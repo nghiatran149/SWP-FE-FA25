@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Users, Settings2, Cog, Calendar, AlertTriangle, AlertCircle, CheckCircle, Car, Loader2, Briefcase, LandPlot, X, FileText, Phone, User } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Users, Settings2, Cog, Calendar, AlertTriangle, AlertCircle, CheckCircle, Car, Loader2, Briefcase, LandPlot, X, FileText, Phone, User, XCircle } from 'lucide-react';
 import api from '../../api/api';
 
 const CampaignManagement = () => {
@@ -620,13 +620,14 @@ const CampaignManagement = () => {
                   <option value="DRAFT">Bản nháp</option>
                   <option value="ACTIVE">Đang thực hiện</option>
                   <option value="COMPLETED">Đã hoàn thành</option>
+                  <option value="CANCELLED">Đã hủy</option>
                 </select>
               </div>
             </div>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-7">
             <div className="bg-white overflow-hidden shadow rounded-lg">
               <div className="p-5">
                 <div className="flex items-center">
@@ -691,6 +692,30 @@ const CampaignManagement = () => {
                           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                         ) : (
                           analytics?.statusStatistics?.COMPLETED || 0
+                        )}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <XCircle className="h-6 w-6 text-red-400" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Đã hủy
+                      </dt>
+                      <dd className="text-2xl font-semibold text-gray-900">
+                        {analyticsLoading ? (
+                          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                        ) : (
+                          analytics?.statusStatistics?.CANCELLED || 0
                         )}
                       </dd>
                     </dl>
@@ -775,7 +800,14 @@ const CampaignManagement = () => {
           {/* Campaigns List */}
           <div className="space-y-4">
             {filteredCampaigns.map((campaign) => (
-              <div key={campaign.campaignId} className="bg-white shadow rounded-lg p-6">
+              <div 
+                key={campaign.campaignId} 
+                className={`bg-white shadow rounded-lg p-6 ${
+                  campaign.status === 'COMPLETED' ? 'border-4 border-green-400' : 
+                  campaign.status === 'CANCELLED' ? 'border-4 border-red-400' : 
+                  'border border-gray-200'
+                }`}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
@@ -830,8 +862,8 @@ const CampaignManagement = () => {
                     >
                       <Eye className="h-4 w-4" />
                     </button>
-                    {/* Chỉ hiển thị nút Edit khi status không phải CANCELLED */}
-                    {campaign.status !== 'CANCELLED' && (
+                    {/* Chỉ hiển thị nút Edit khi status không phải CANCELLED hoặc COMPLETED */}
+                    {campaign.status !== 'CANCELLED' && campaign.status !== 'COMPLETED' && (
                       <button 
                         onClick={() => handleEditCampaign(campaign)}
                         className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500"
@@ -896,6 +928,7 @@ const CampaignManagement = () => {
                     <option value={5}>5 / trang</option>
                     <option value={10}>10 / trang</option>
                     <option value={20}>20 / trang</option>
+                    <option value={50}>50 / trang</option>
                   </select>
                 </div>
                 <div>
