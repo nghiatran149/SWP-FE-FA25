@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Base URL của API
-const BASE_URL = 'https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api';
-// const BASE_URL = 'https://oem-ev-warranty-management-system-1.onrender.com/api';
+// const BASE_URL = 'https://isiah-hyperhilarious-disheartenedly.ngrok-free.dev/api';
+const BASE_URL = 'https://nonconsolable-nonurban-ellis.ngrok-free.dev/api';
 
 // Tạo axios instance với cấu hình cơ bản
 const api = axios.create({

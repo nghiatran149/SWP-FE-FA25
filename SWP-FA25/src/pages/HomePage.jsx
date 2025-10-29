@@ -1,5 +1,5 @@
 import React from 'react';
-import { Car, Shield, Wrench, BarChart3, Users, Settings } from 'lucide-react';
+import { Car, Shield, Wrench, BarChart3, Users, Settings, CheckCircle, Megaphone, Package, FileText } from 'lucide-react';
 import authUtils from '../utils/auth.js';
 
 const HomePage = () => {
@@ -22,19 +22,25 @@ const HomePage = () => {
           title: 'Chào mừng, EVM STAFF!',
           subtitle: 'Quản lý phụ tùng và duyệt yêu cầu bảo hành',
           features: [
-            { icon: Settings, title: 'Quản lý phụ tùng', desc: 'Theo dõi kho phụ tùng và linh kiện' },
-            { icon: Shield, title: 'Duyệt bảo hành', desc: 'Xét duyệt các yêu cầu bảo hành' },
-            { icon: Car, title: 'Hỗ trợ kỹ thuật', desc: 'Tư vấn kỹ thuật cho dịch vụ' }
+            { icon: CheckCircle, title: 'Duyệt bảo hành', desc: 'Xét duyệt các yêu cầu bảo hành' },
+            { icon: Megaphone, title: 'Quản lý chiến dịch', desc: 'Quản lý và theo dõi các chiến dịch' },
+            { icon: FileText, title: 'Lịch sử dịch vụ', desc: 'Xem lại các dịch vụ bảo hành đã thực hiện' },
+            { icon: Package, title: 'Kho phụ tùng', desc: 'Theo dõi tồn kho và quản lý phụ tùng thay thế' },
+            
           ]
         };
       case 'SC_STAFF':
         return {
           title: 'Chào mừng, SC STAFF!',
-          subtitle: 'Quản lý khách hàng và điều phối dịch vụ',
+          subtitle: 'Quản lý trung tâm dịch vụ và điều phối công việc',
           features: [
-            { icon: Users, title: 'Quản lý khách hàng', desc: 'Chăm sóc và hỗ trợ khách hàng' },
-            { icon: Car, title: 'Quản lý xe', desc: 'Theo dõi thông tin xe và lịch sử dịch vụ' },
-            { icon: Wrench, title: 'Điều phối dịch vụ', desc: 'Phân công công việc cho kỹ thuật viên' }
+            { icon: Users, title: 'Quản lý khách hàng', desc: 'Quản lý thông tin khách hàng' },
+            { icon: Car, title: 'Quản lý xe', desc: 'Theo dõi thông tin xe và lịch sử' },
+            { icon: Shield, title: 'Yêu cầu bảo hành', desc: 'Tiếp nhận và xử lý yêu cầu bảo hành' },
+            { icon: Wrench, title: 'Quản lý kỹ thuật viên', desc: 'Quản lý và phân công kỹ thuật viên' },
+            { icon: FileText, title: 'Lịch sử dịch vụ', desc: 'Theo dõi lịch sử các dịch vụ đã thực hiện' },
+            { icon: Megaphone, title: 'Chiến dịch dịch vụ', desc: 'Quản lý các chiến dịch và thông báo' },
+            { icon: Package, title: 'Phụ tùng có sẵn', desc: 'Quản lý tồn kho phụ tùng' }
           ]
         };
       case 'SC_TECHNICIAN':

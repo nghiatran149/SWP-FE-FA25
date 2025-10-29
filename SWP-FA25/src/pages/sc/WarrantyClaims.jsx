@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Calendar, User, UserPlus, Car, X, Upload, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Image, Wrench } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Calendar, User, UserPlus, Car, X, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Wrench } from 'lucide-react';
 import api from '../../api/api';
 
 // Helper functions
@@ -581,7 +581,6 @@ const WarrantyClaims = () => {
     issueDescription: '',
     diagnosisReport: '',
     requestDate: '',
-    imageUrls: [],
     partModelQuantities: {}
   });
 
@@ -591,7 +590,6 @@ const WarrantyClaims = () => {
     issueDescription: '',
     diagnosisReport: '',
     requestDate: '',
-    imageUrls: [],
     partModelQuantities: {},
     selfServiceReason: ''
   });
@@ -700,10 +698,10 @@ const WarrantyClaims = () => {
         issueDescription: formData.issueDescription,
         diagnosisReport: formData.diagnosisReport,
         requestDate: formData.requestDate,
-        imageUrls: formData.imageUrls,
         partModelQuantities: formData.partModelQuantities
       };
 
+      console.log('Sending manufacturer claim data:', JSON.stringify(claimData, null, 2));
       const response = await api.post('/warranty/claims', claimData);
 
       if (response.status === 201) {
@@ -729,7 +727,6 @@ const WarrantyClaims = () => {
       issueDescription: '',
       diagnosisReport: '',
       requestDate: '',
-      imageUrls: [],
       partModelQuantities: {}
     });
     // Reset part selection
@@ -745,22 +742,6 @@ const WarrantyClaims = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }));
-  };
-
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const fileNames = files.map(file => file.name);
-    setFormData(prev => ({
-      ...prev,
-      imageUrls: [...prev.imageUrls, ...fileNames]
-    }));
-  };
-
-  const removeAttachment = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      imageUrls: prev.imageUrls.filter((_, i) => i !== index)
     }));
   };
 
@@ -825,16 +806,31 @@ const WarrantyClaims = () => {
     setAddLoading(true);
 
     try {
+      // Validation
+      if (Object.keys(formDataSelf.partModelQuantities).length === 0) {
+        setErrorMessage('Vui lòng thêm ít nhất một phụ tùng');
+        setShowErrorModal(true);
+        setAddLoading(false);
+        return;
+      }
+
+      if (!formDataSelf.selfServiceReason || formDataSelf.selfServiceReason.trim() === '') {
+        setErrorMessage('Vui lòng nhập lý do tự xử lí');
+        setShowErrorModal(true);
+        setAddLoading(false);
+        return;
+      }
+
       const claimData = {
         vin: formDataSelf.vin,
         issueDescription: formDataSelf.issueDescription,
         diagnosisReport: formDataSelf.diagnosisReport,
         requestDate: formDataSelf.requestDate,
-        imageUrls: formDataSelf.imageUrls,
         partModelQuantities: formDataSelf.partModelQuantities,
         selfServiceReason: formDataSelf.selfServiceReason
       };
 
+      console.log('Sending self-service claim data:', JSON.stringify(claimData, null, 2));
       const response = await api.post('/warranty/claims/self-service', claimData);
 
       if (response.status === 201) {
@@ -887,7 +883,6 @@ const WarrantyClaims = () => {
       issueDescription: '',
       diagnosisReport: '',
       requestDate: '',
-      imageUrls: [],
       partModelQuantities: {},
       selfServiceReason: ''
     });
@@ -902,22 +897,6 @@ const WarrantyClaims = () => {
     setFormDataSelf(prev => ({
       ...prev,
       [name]: value
-    }));
-  };
-
-  const handleFileUploadSelf = (e) => {
-    const files = Array.from(e.target.files);
-    const fileNames = files.map(file => file.name);
-    setFormDataSelf(prev => ({
-      ...prev,
-      imageUrls: [...prev.imageUrls, ...fileNames]
-    }));
-  };
-
-  const removeAttachmentSelf = (index) => {
-    setFormDataSelf(prev => ({
-      ...prev,
-      imageUrls: prev.imageUrls.filter((_, i) => i !== index)
     }));
   };
 
@@ -1425,61 +1404,6 @@ const WarrantyClaims = () => {
                       )}
                     </div>
                   </div>
-
-                  {/* Hình ảnh đính kèm */}
-                  <div className="mt-6">
-                    <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                      <Upload className="h-5 w-5 mr-2 text-purple-500" />
-                      Hình ảnh đính kèm
-                    </h4>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                      <div className="text-center">
-                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                        <div className="mt-2">
-                          <label htmlFor="file-upload" className="cursor-pointer">
-                            <span className="text-sm font-medium text-primary-600 hover:text-primary-500">
-                              Tải lên hình ảnh
-                            </span>
-                            <span className="text-sm text-gray-500"> hoặc kéo thả vào đây</span>
-                          </label>
-                          <input
-                            id="file-upload"
-                            name="file-upload"
-                            type="file"
-                            className="sr-only"
-                            multiple
-                            accept="image/*"
-                            onChange={handleFileUpload}
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          PNG, JPG, JPEG lên tới 5MB
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Hiển thị file đã upload */}
-                    {formData.imageUrls.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-sm font-medium text-gray-700">Hình ảnh đã tải lên:</p>
-                        {formData.imageUrls.map((fileName, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                            <div className="flex items-center">
-                              <FileText className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-sm text-gray-900">{fileName}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeAttachment(index)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </form>
               </div>
 
@@ -1783,26 +1707,6 @@ const WarrantyClaims = () => {
                         </div>
                       </div>
                     )}
-
-                    {/* Hình ảnh đính kèm */}
-                    {selectedClaim.imageUrls && selectedClaim.imageUrls.length > 0 && (
-                      <div className="mt-6">
-                        <div className="bg-gray-50 rounded-lg p-4">
-                          <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                            <Image className="h-5 w-5 mr-2 text-lime-500" />
-                            Hình ảnh đính kèm
-                          </h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {selectedClaim.imageUrls.map((imageUrl, index) => (
-                              <div key={index} className="bg-white border rounded-lg p-3 flex items-center space-x-2">
-                                <Image className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm text-gray-900 truncate">{imageUrl}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8">
@@ -2098,61 +2002,6 @@ const WarrantyClaims = () => {
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  {/* Hình ảnh đính kèm */}
-                  <div className="mt-6">
-                    <h4 className="text-md font-semibold text-gray-900 mb-3 flex items-center">
-                      <Upload className="h-5 w-5 mr-2 text-purple-500" />
-                      Hình ảnh đính kèm
-                    </h4>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                      <div className="text-center">
-                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                        <div className="mt-2">
-                          <label htmlFor="file-upload-self" className="cursor-pointer">
-                            <span className="text-sm font-medium text-primary-600 hover:text-primary-500">
-                              Tải lên hình ảnh
-                            </span>
-                            <span className="text-sm text-gray-500"> hoặc kéo thả vào đây</span>
-                          </label>
-                          <input
-                            id="file-upload-self"
-                            name="file-upload"
-                            type="file"
-                            className="sr-only"
-                            multiple
-                            accept="image/*"
-                            onChange={handleFileUploadSelf}
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          PNG, JPG, JPEG lên tới 5MB
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Hiển thị file đã upload */}
-                    {formDataSelf.imageUrls.length > 0 && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-sm font-medium text-gray-700">Hình ảnh đã tải lên:</p>
-                        {formDataSelf.imageUrls.map((fileName, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                            <div className="flex items-center">
-                              <FileText className="h-4 w-4 text-gray-400 mr-2" />
-                              <span className="text-sm text-gray-900">{fileName}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeAttachmentSelf(index)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </form>
               </div>

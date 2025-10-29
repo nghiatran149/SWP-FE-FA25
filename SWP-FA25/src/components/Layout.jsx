@@ -12,6 +12,7 @@ import {
   X,
   Car,
   User,
+  Users,
   UserRoundCog,
   Bell,
   UserCheck,
@@ -43,17 +44,18 @@ const Layout = ({ children }) => {
   // Định nghĩa tất cả navigation items
   const allNavigationItems = [
     { name: 'Trang chủ', href: '/', icon: LayoutDashboard, roles: ['ADMIN', 'EVM_STAFF', 'SC_STAFF', 'SC_TECHNICIAN'] },
-    
+
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, roles: ['ADMIN'] },
     { name: 'Báo cáo & Phân tích', href: '/reports', icon: BarChart3, roles: ['ADMIN'] },
     { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck, roles: ['ADMIN'] },
 
     { name: 'Duyệt yêu cầu', href: '/warranty-approval', icon: CheckCircle, roles: ['EVM_STAFF'] },
     { name: 'Quản lý chiến dịch', href: '/campaign-management', icon: Megaphone, roles: ['EVM_STAFF'] },
+    { name: 'Lịch sử dịch vụ', href: '/service-records', icon: FileText, roles: ['EVM_STAFF'] },
     { name: 'Kho phụ tùng', href: '/part-warehouse', icon: Package, roles: ['EVM_STAFF'] },
-    
+
     { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
-    { name: 'Quản lý khách hàng', href: '/customers', icon: User, roles: ['SC_STAFF'] },
+    { name: 'Quản lý khách hàng', href: '/customers', icon: Users, roles: ['SC_STAFF'] },
     { name: 'Quản lý xe', href: '/vehicles', icon: Car, roles: ['SC_STAFF'] },
     { name: 'Yêu cầu bảo hành', href: '/warranty-claims', icon: Shield, roles: ['SC_STAFF'] },
     { name: 'Lịch sử dịch vụ', href: '/service-records', icon: FileText, roles: ['SC_STAFF'] },
@@ -94,10 +96,10 @@ const Layout = ({ children }) => {
             <X className="h-6 w-6" />
           </button>
         </div>
-        
+
         {/* Viền phân cách với gradient */}
         <div className="h-1 bg-gradient-to-r from-transparent via-blue-400/50 to-transparent"></div>
-        
+
         <nav className="mt-5 px-3 flex-1 overflow-y-auto sidebar-scroll pb-6">
           <ul className="space-y-2">
             {navigation.length > 0 ? (
@@ -107,17 +109,15 @@ const Layout = ({ children }) => {
                   <li key={item.name}>
                     <Link
                       to={item.href}
-                      className={`${
-                        isActive
+                      className={`${isActive
                           ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/50 border-l-4 border-yellow-400'
                           : 'text-blue-100 hover:bg-blue-600/50 hover:text-white border-l-4 border-transparent hover:border-blue-400'
-                      } group flex items-center px-3 py-3.5 text-sm font-semibold rounded-lg transition-all duration-200 transform hover:translate-x-1`}
+                        } group flex items-center px-3 py-3.5 text-sm font-semibold rounded-lg transition-all duration-200 transform hover:translate-x-1`}
                       onClick={() => setSidebarOpen(false)}
                     >
                       <item.icon
-                        className={`${
-                          isActive ? 'text-yellow-300' : 'text-blue-300 group-hover:text-blue-100'
-                        } mr-3 h-5 w-5 flex-shrink-0`}
+                        className={`${isActive ? 'text-yellow-300' : 'text-blue-300 group-hover:text-blue-100'
+                          } mr-3 h-5 w-5 flex-shrink-0`}
                       />
                       <span className="truncate">{item.name}</span>
                     </Link>
@@ -151,7 +151,7 @@ const Layout = ({ children }) => {
                 </h1>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {/* <button className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors relative">
                 <Bell className="h-6 w-6" />
@@ -168,12 +168,12 @@ const Layout = ({ children }) => {
                   )}
                 </div>
               </div>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="inline-flex items-center px-4 py-2.5 border-2 border-white/30 text-sm font-bold rounded-lg text-white bg-red-500 hover:bg-red-600 hover:border-white/50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Đăng xuất
-                <LogOut className="h-4 w-4 ml-2" /> 
+                <LogOut className="h-4 w-4 ml-2" />
               </button>
             </div>
           </div>
