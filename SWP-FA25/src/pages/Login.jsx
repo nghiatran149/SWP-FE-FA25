@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Car, Eye, EyeOff, Lock, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import api from '../api/api.js';
 
 const Login = () => {
@@ -212,8 +213,8 @@ const Login = () => {
             </div>
 
             {/* Remember Me */}
-            {/* <div className="flex items-center justify-between">
-              <div className="flex items-center">
+            <div className="flex items-center justify-between">
+              {/* <div className="flex items-center">
                 <input
                   id="remember-me"
                   name="remember-me"
@@ -223,13 +224,13 @@ const Login = () => {
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
                   Ghi nhớ đăng nhập
                 </label>
-              </div>
+              </div> */}
               <div className="text-sm">
-                <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                <Link to="/forget-password" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                   Quên mật khẩu?
-                </a>
+                </Link>
               </div>
-            </div> */}
+            </div>
 
             {/* Submit Error */}
             {errors.submit && (

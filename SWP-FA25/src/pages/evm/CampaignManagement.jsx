@@ -535,7 +535,7 @@ const CampaignManagement = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý chiến dịch & dịch vụ</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Theo dõi các chiến dịch triệu hồi, dịch vụ và bảo dưỡng
+            Quản lý và theo dõi các chiến dịch triệu hồi, dịch vụ
           </p>
         </div>
         <button 

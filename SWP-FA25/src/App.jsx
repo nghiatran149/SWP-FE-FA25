@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import ForgetPassword from './pages/ForgetPassword';
 
 // SC (Service Center)
 import WarrantyClaims from './pages/sc/WarrantyClaims';
@@ -30,6 +31,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
         <Route path="/*" element={
           <Layout>
             <Routes>
@@ -94,7 +96,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/service-records" element={
-                <ProtectedRoute allowedRoles={['SC_STAFF']}>
+                <ProtectedRoute allowedRoles={['SC_STAFF', 'EVM_STAFF']}>
                   <ServiceRecord />
                 </ProtectedRoute>
               } />

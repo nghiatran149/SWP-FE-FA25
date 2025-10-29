@@ -335,7 +335,7 @@ const ServiceCampaigns = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý chiến dịch & dịch vụ</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Theo dõi các chiến dịch triệu hồi, dịch vụ và bảo dưỡng
+            Theo dõi các chiến dịch triệu hồi, dịch vụ
           </p>
         </div>
         {/* <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600">
