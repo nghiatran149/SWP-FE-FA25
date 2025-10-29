@@ -19,14 +19,10 @@ const VehicleManagement = () => {
   const [modelsLoading, setModelsLoading] = useState(false);
   
   // Pagination state
-  const [pagination, setPagination] = useState({
-    page: 0,
-    size: 10,
-    totalElements: 0,
-    totalPages: 0,
-    hasNext: false,
-    hasPrevious: false
-  });
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   
   // Edit modal states
   const [showEditModal, setShowEditModal] = useState(false);
@@ -65,29 +61,13 @@ const VehicleManagement = () => {
       setError(null);
       const response = await api.get(`/vehicles?page=${page}&size=${size}`);
       console.log('API Response:', response.data);
-      console.log('Response type:', typeof response.data);
-      console.log('Is Array:', Array.isArray(response.data));
       
-      // Kiểm tra nếu response là HTML thay vì JSON
-      if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
-        throw new Error('API trả về HTML page thay vì JSON. Có thể ngrok chưa setup đúng.');
-      }
-      
-      // Xử lý response mới với pagination structure
       if (response.data && response.data.content && Array.isArray(response.data.content)) {
         setVehicles(response.data.content);
-        setPagination({
-          page: response.data.page,
-          size: response.data.size,
-          totalElements: response.data.totalElements,
-          totalPages: response.data.totalPages,
-          hasNext: response.data.hasNext,
-          hasPrevious: response.data.hasPrevious
-        });
-        console.log('Loaded vehicles from paginated response:', response.data.content.length);
-      } else if (Array.isArray(response.data)) {
-        // Fallback cho trường hợp API vẫn trả về array trực tiếp
-        setVehicles(response.data);
+        setCurrentPage(response.data.page);
+        setPageSize(response.data.size);
+        setTotalPages(response.data.totalPages);
+        setTotalElements(response.data.totalElements);
       } else {
         console.warn('API response is not in expected format:', response.data);
         setVehicles([]);
@@ -96,16 +76,15 @@ const VehicleManagement = () => {
     } catch (err) {
       setError('Không thể tải danh sách xe. Vui lòng thử lại.');
       console.error('Error fetching vehicles:', err);
-      console.error('Error response:', err.response?.data);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVehicles();
-    fetchVehicleModels(); // Fetch models khi component mount để dùng cho filter
-  }, []);
+    fetchVehicles(currentPage, pageSize);
+    fetchVehicleModels();
+  }, [currentPage, pageSize]);
 
   // Fetch vehicle models từ API
   const fetchVehicleModels = async () => {
@@ -203,7 +182,7 @@ const VehicleManagement = () => {
       
       if (response.status === 201) {
         // Thêm thành công - refresh danh sách
-        await fetchVehicles();
+        await fetchVehicles(currentPage, pageSize);
         setShowAddModal(false);
         resetForm();
         setError(null);
@@ -267,7 +246,7 @@ const VehicleManagement = () => {
       
       if (response.status === 200) {
         // Cập nhật thành công - refresh danh sách
-        await fetchVehicles();
+        await fetchVehicles(currentPage, pageSize);
         setShowEditModal(false);
         resetEditForm();
         setError(null);
@@ -359,6 +338,88 @@ const VehicleManagement = () => {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
+  // Pagination handlers
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(0); // Reset to first page when changing page size
+  };
+
+  // Pagination component
+  const Pagination = () => (
+    <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+      <div className="flex-1 flex justify-between sm:hidden">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Trước
+        </button>
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages - 1}
+          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Sau
+        </button>
+      </div>
+      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-gray-700">
+            Hiển thị <span className="font-medium">{currentPage * pageSize + 1}</span> đến{' '}
+            <span className="font-medium">{Math.min((currentPage + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
+            <span className="font-medium">{totalElements}</span> xe
+          </p>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value={5}>5 / trang</option>
+            <option value={10}>10 / trang</option>
+            <option value={20}>20 / trang</option>
+            <option value={50}>50 / trang</option>
+          </select>
+        </div>
+        <div>
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 0}
+              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Trước
+            </button>
+            {[...Array(totalPages)].map((_, index) => (
+              <button
+                key={index}
+                onClick={() => handlePageChange(index)}
+                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                  currentPage === index
+                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1}
+              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Sau
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  );
+
   // Function cho part status colors
   const getPartStatusColor = (status) => {
     switch (status?.toUpperCase()) {
@@ -415,7 +476,7 @@ const VehicleManagement = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý xe</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Theo dõi thông tin xe và lịch sử dịch vụ
+            Theo dõi thông tin xe và lịch sử bảo dưỡng
           </p>
         </div>
         <button 
@@ -443,7 +504,7 @@ const VehicleManagement = () => {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Tổng số xe</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{pagination.totalElements || 0}</dd>
+                  <dd className="text-2xl font-semibold text-gray-900">{totalElements || 0}</dd>
                 </dl>
               </div>
             </div>
@@ -1369,40 +1430,9 @@ const VehicleManagement = () => {
       )}
 
       {/* Summary */}
-      {!loading && !error && (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-500">
-              Hiển thị {filteredVehicles.length} trong tổng số {pagination.totalElements} xe
-              <br />
-              Trang {pagination.page + 1} / {pagination.totalPages}
-            </div>
-            
-            {/* Pagination Controls */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center space-x-2">
-                <button
-                  disabled={!pagination.hasPrevious}
-                  onClick={() => fetchVehicles(pagination.page - 1, pagination.size)}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Trước
-                </button>
-                
-                <span className="text-sm text-gray-700">
-                  Trang {pagination.page + 1} / {pagination.totalPages}
-                </span>
-                
-                <button
-                  disabled={!pagination.hasNext}
-                  onClick={() => fetchVehicles(pagination.page + 1, pagination.size)}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Sau
-                </button>
-              </div>
-            )}
-          </div>
+      {!loading && !error && filteredVehicles.length > 0 && (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <Pagination />
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Calendar, User, Car, FileText, Wrench, Replace, AlertCircle, X } from 'lucide-react';
+import { Search, Eye, Calendar, User, Car, FileText, Wrench, Replace, AlertCircle, X, Bell, Settings } from 'lucide-react';
 import api from '../../api/api';
 
 const ServiceRecord = () => {
@@ -81,6 +81,10 @@ const ServiceRecord = () => {
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'WARRANTY_REPLACE':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'RECALL':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'SERVICE':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -92,6 +96,10 @@ const ServiceRecord = () => {
         return 'Sửa chữa bảo hành';
       case 'WARRANTY_REPLACE':
         return 'Thay thế bảo hành';
+      case 'RECALL':
+        return 'Chiến dịch triệu hồi';
+      case 'SERVICE':
+        return 'Bảo dưỡng dịch vụ';
       default:
         return type || 'N/A';
     }
@@ -163,11 +171,10 @@ const ServiceRecord = () => {
               <button
                 key={index}
                 onClick={() => handlePageChange(index)}
-                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                  currentPage === index
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }`}
+                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === index
+                  ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
               >
                 {index + 1}
               </button>
@@ -209,7 +216,7 @@ const ServiceRecord = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
         <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
@@ -255,6 +262,42 @@ const ServiceRecord = () => {
                   <dt className="text-sm font-medium text-gray-500 truncate">Sửa chữa bảo hành</dt>
                   <dd className="text-2xl font-semibold text-gray-900">
                     {serviceRecords.filter(r => r.serviceType === 'WARRANTY_REPAIR').length}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <Bell className="h-6 w-6 text-orange-400" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Chiến dịch triệu hồi</dt>
+                  <dd className="text-2xl font-semibold text-gray-900">
+                    {serviceRecords.filter(r => r.serviceType === 'RECALL').length}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <Settings className="h-6 w-6 text-teal-400" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Bảo dưỡng dịch vụ</dt>
+                  <dd className="text-2xl font-semibold text-gray-900">
+                    {serviceRecords.filter(r => r.serviceType === 'SERVICE').length}
                   </dd>
                 </dl>
               </div>
@@ -318,6 +361,8 @@ const ServiceRecord = () => {
                   <option value="all">Tất cả loại dịch vụ</option>
                   <option value="WARRANTY_REPAIR">Sửa chữa bảo hành</option>
                   <option value="WARRANTY_REPLACE">Thay thế bảo hành</option>
+                  <option value="RECALL">Chiến dịch triệu hồi</option>
+                  <option value="SERVICE">Bảo dưỡng dịch vụ</option>
                 </select>
               </div>
             </div>
