@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit, Calendar, User, UserPlus, Car, X, FileText, Loader2, Phone, Mail, AlertCircle, Shield, Wrench } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Plus, Eye, Edit, Calendar, User, UserPlus, Car, X, FileText, Loader2, Phone, Mail, AlertCircle, CheckCircle, Shield, Wrench } from 'lucide-react';
 import api from '../../api/api';
 
 // Helper functions
@@ -11,6 +11,8 @@ const getStatusColor = (status) => {
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     case 'APPROVED':
       return 'bg-orange-100 text-orange-800 border-orange-200';
+    case 'WAITTING':
+      return 'bg-cyan-100 text-cyan-800 border-cyan-200';
     case 'REJECTED':
       return 'bg-red-100 text-red-800 border-red-200';
     case 'PENDING':
@@ -29,6 +31,8 @@ const getStatusText = (status) => {
       return 'Đang xử lý';
     case 'APPROVED':
       return 'Chờ phân công';
+    case 'WAITTING':
+      return 'Nghiệm thu';
     case 'REJECTED':
       return 'Từ chối';
     case 'PENDING':
@@ -268,6 +272,7 @@ const ProcessingClaimsTable = ({
   setShowAddSelfServiceModal,
   handleViewClaim,
   handleOpenAssignModal,
+  handleOpenFinalizeModal,
   Pagination
 }) => (
   <>
@@ -307,6 +312,7 @@ const ProcessingClaimsTable = ({
             <option value="all">Tất cả trạng thái</option>
             <option value="APPROVED">Chờ phân công</option>
             <option value="PROCESS">Đang xử lý</option>
+            <option value="WAITTING">Nghiệm thu</option>
             <option value="COMPLETED">Hoàn thành</option>
           </select>
           <select
@@ -427,6 +433,15 @@ const ProcessingClaimsTable = ({
                           <UserPlus className="h-4 w-4" />
                         </button>
                       )}
+                      {claim.claimStatus === 'WAITTING' && (
+                        <button 
+                          onClick={() => handleOpenFinalizeModal(claim)}
+                          className="p-2 text-white hover:text-white hover:bg-cyan-600 rounded-md bg-cyan-500 border border-gray-500"
+                          title="Nghiệm thu"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -449,6 +464,7 @@ const WarrantyClaims = () => {
   const [error, setError] = useState(null);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [errorModalSource, setErrorModalSource] = useState(''); // 'manufacturer' hoặc 'self-service'
 
   // State cho pagination
   const [currentPage, setCurrentPage] = useState(0);
@@ -482,6 +498,12 @@ const WarrantyClaims = () => {
     notes: '',
     estimatedHours: ''
   });
+
+  // State cho modal nghiệm thu (finalize)
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [finalizeLoading, setFinalizeLoading] = useState(false);
+  const [selectedClaimToFinalize, setSelectedClaimToFinalize] = useState(null);
+  const [finalizeNotes, setFinalizeNotes] = useState('');
 
   // State cho parts (cho modal tạo yêu cầu cho hãng)
   const [availableParts, setAvailableParts] = useState([]);
@@ -603,6 +625,7 @@ const WarrantyClaims = () => {
     claim.claimStatus === 'APPROVED' ||
     claim.claimStatus === 'PROCESSING' ||
     claim.claimStatus === 'PROCESS' ||
+    claim.claimStatus === 'WAITTING' ||
     claim.claimStatus === 'COMPLETED'
   );
 
@@ -651,6 +674,7 @@ const WarrantyClaims = () => {
             <option value={10}>10 / trang</option>
             <option value={20}>20 / trang</option>
             <option value={50}>50 / trang</option>
+            <option value={100}>100 / trang</option>
           </select>
         </div>
         <div>
@@ -691,6 +715,15 @@ const WarrantyClaims = () => {
   const handleAddWarrantyClaim = async (e) => {
     if (e) e.preventDefault();
     setAddLoading(true);
+
+    // Validation: Bắt buộc chọn ít nhất 1 phụ tùng
+    if (Object.keys(formData.partModelQuantities).length === 0) {
+      setErrorMessage('Vui lòng chọn ít nhất một phụ tùng');
+      setErrorModalSource('manufacturer');
+      setShowErrorModal(true);
+      setAddLoading(false);
+      return;
+    }
 
     try {
       const claimData = {
@@ -807,15 +840,9 @@ const WarrantyClaims = () => {
 
     try {
       // Validation
-      if (Object.keys(formDataSelf.partModelQuantities).length === 0) {
-        setErrorMessage('Vui lòng thêm ít nhất một phụ tùng');
-        setShowErrorModal(true);
-        setAddLoading(false);
-        return;
-      }
-
       if (!formDataSelf.selfServiceReason || formDataSelf.selfServiceReason.trim() === '') {
         setErrorMessage('Vui lòng nhập lý do tự xử lí');
+        setErrorModalSource('self-service');
         setShowErrorModal(true);
         setAddLoading(false);
         return;
@@ -1028,6 +1055,41 @@ const WarrantyClaims = () => {
     }
   };
 
+  // Hàm mở modal nghiệm thu
+  const handleOpenFinalizeModal = useCallback((claim) => {
+    setSelectedClaimToFinalize(claim);
+    setShowFinalizeModal(true);
+  }, []);
+
+  // Hàm xác nhận nghiệm thu/hoàn thành claim
+  const handleFinalizeClaim = async () => {
+    if (!selectedClaimToFinalize) return;
+
+    try {
+      setFinalizeLoading(true);
+      const response = await api.post(`/warranty/claims/${selectedClaimToFinalize.id}/finalize`, {
+        notes: finalizeNotes
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        await fetchWarrantyClaims(currentPage, pageSize);
+        setShowFinalizeModal(false);
+        setSelectedClaimToFinalize(null);
+        setFinalizeNotes('');
+      }
+    } catch (err) {
+      console.error('Error finalizing claim:', err);
+      if (err.response?.data?.message) {
+        setErrorMessage(err.response.data.message);
+      } else {
+        setErrorMessage('Không thể nghiệm thu yêu cầu bảo hành. Vui lòng thử lại.');
+      }
+      setShowErrorModal(true);
+    } finally {
+      setFinalizeLoading(false);
+    }
+  };
+
   // Reset form phân công
   const resetAssignForm = () => {
     setAssignFormData({
@@ -1146,6 +1208,7 @@ const WarrantyClaims = () => {
               setShowAddSelfServiceModal={setShowAddSelfServiceModal}
               handleViewClaim={handleViewClaim}
               handleOpenAssignModal={handleOpenAssignModal}
+              handleOpenFinalizeModal={handleOpenFinalizeModal}
               Pagination={Pagination}
             />
           </div>
@@ -2238,8 +2301,13 @@ const WarrantyClaims = () => {
                   onClick={() => {
                     setShowErrorModal(false);
                     setErrorMessage('');
-                    // Mở lại modal form để user có thể sửa
-                    setShowAddSelfServiceModal(true);
+                    // Mở lại modal tương ứng dựa vào nguồn lỗi
+                    if (errorModalSource === 'manufacturer') {
+                      setShowAddModal(true);
+                    } else if (errorModalSource === 'self-service') {
+                      setShowAddSelfServiceModal(true);
+                    }
+                    setErrorModalSource('');
                   }}
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
                 >
@@ -2254,6 +2322,165 @@ const WarrantyClaims = () => {
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
                 >
                   Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal nghiệm thu yêu cầu bảo hành */}
+      {showFinalizeModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                {/* Header */}
+                <div className="flex items-start mb-4">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-cyan-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <CheckCircle className="h-6 w-6 text-cyan-600" />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Nghiệm thu yêu cầu bảo hành
+                    </h3>
+                    {selectedClaimToFinalize && (
+                      <p className="mt-1 text-sm text-gray-500">
+                        Mã yêu cầu: <span className="font-semibold">{selectedClaimToFinalize.id}</span>
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowFinalizeModal(false);
+                      setSelectedClaimToFinalize(null);
+                      setFinalizeNotes('');
+                    }}
+                    disabled={finalizeLoading}
+                    className="bg-white rounded-md text-gray-400 hover:text-gray-600 focus:outline-none"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="mt-4">
+                  {selectedClaimToFinalize && (
+                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Khách hàng:</span>
+                          <span className="font-medium text-gray-900">{selectedClaimToFinalize.customer?.fullName || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Xe:</span>
+                          <span className="font-medium text-gray-900">{selectedClaimToFinalize.vehicle?.modelName || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">VIN:</span>
+                          <span className="font-medium text-gray-900">{selectedClaimToFinalize.vehicle?.vin || selectedClaimToFinalize.vehicleVin}</span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-gray-600">Vấn đề:</span>
+                          <p className="font-medium text-gray-900 mt-1">{selectedClaimToFinalize.issueDescription}</p>
+                        </div>
+                        {selectedClaimToFinalize.diagnosisReport && (
+                          <div className="text-sm">
+                            <span className="text-gray-600">Báo cáo chẩn đoán:</span>
+                            <p className="font-medium text-gray-900 mt-1">{selectedClaimToFinalize.diagnosisReport}</p>
+                          </div>
+                        )}
+                        {selectedClaimToFinalize.technician && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Kỹ thuật viên:</span>
+                            <span className="font-medium text-gray-900">{selectedClaimToFinalize.technician.fullName}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Loại xử lý:</span>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getProcessingTypeColor(selectedClaimToFinalize.processingType)}`}>
+                            {getProcessingTypeText(selectedClaimToFinalize.processingType)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ghi chú nghiệm thu
+                    </label>
+                    <textarea
+                      value={finalizeNotes}
+                      onChange={(e) => setFinalizeNotes(e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500"
+                      placeholder="Nhập ghi chú khi nghiệm thu yêu cầu bảo hành..."
+                      disabled={finalizeLoading}
+                    />
+                  </div>
+
+                  <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <CheckCircle className="h-5 w-5 text-cyan-400" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-cyan-700">
+                          Bạn có chắc chắn muốn nghiệm thu yêu cầu bảo hành này không? Hệ thống sẽ chuyển trạng thái sang "Hoàn thành" và ghi nhận thời gian hoàn thành.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer buttons */}
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  onClick={handleFinalizeClaim}
+                  disabled={finalizeLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-cyan-600 text-base font-medium text-white hover:bg-cyan-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  {finalizeLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {finalizeLoading ? 'Đang xử lý...' : 'Xác nhận nghiệm thu'}
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const claimToReassign = selectedClaimToFinalize;
+                    
+                    // Đóng modal nghiệm thu và reset state
+                    setShowFinalizeModal(false);
+                    setSelectedClaimToFinalize(null);
+                    setFinalizeNotes('');
+                    
+                    // Mở modal giao lại công việc
+                    await handleOpenAssignModal(claimToReassign);
+                  }}
+                  disabled={finalizeLoading}
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  Giao lại công việc
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFinalizeModal(false);
+                    setSelectedClaimToFinalize(null);
+                    setFinalizeNotes('');
+                  }}
+                  disabled={finalizeLoading}
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none disabled:opacity-50 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Hủy
                 </button>
               </div>
             </div>

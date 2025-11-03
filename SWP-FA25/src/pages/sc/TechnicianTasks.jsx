@@ -188,8 +188,10 @@ const TechnicianTasks = () => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'HIGH':
+      case 'URGENT':
         return 'text-red-600';
+      case 'HIGH':
+        return 'text-orange-600';
       case 'MEDIUM':
         return 'text-yellow-600';
       case 'LOW':
@@ -201,6 +203,8 @@ const TechnicianTasks = () => {
 
   const getPriorityText = (priority) => {
     switch (priority) {
+      case 'URGENT':
+        return 'Khẩn cấp';
       case 'HIGH':
         return 'Cao';
       case 'MEDIUM':
@@ -214,8 +218,10 @@ const TechnicianTasks = () => {
 
   const getPriorityIcon = (priority) => {
     switch (priority) {
+      case 'URGENT':
+        return <AlertCircle className="h-4 w-4 text-red-700" />;
       case 'HIGH':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
+        return <AlertCircle className="h-4 w-4 text-orange-600" />;
       case 'MEDIUM':
         return <Clock className="h-4 w-4 text-yellow-600" />;
       case 'LOW':
