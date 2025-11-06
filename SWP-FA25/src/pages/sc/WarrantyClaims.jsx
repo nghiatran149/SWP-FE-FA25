@@ -1581,6 +1581,22 @@ const WarrantyClaims = () => {
                               <span className="text-sm text-gray-900">{selectedClaim.completionDate}</span>
                             </div>
                           )}
+                          {selectedClaim.dueDate && (
+                            <div className="flex justify-between">
+                              <span className="text-sm font-medium text-gray-700">Hạn xử lý:</span>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm ${selectedClaim.isOverdue ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
+                                  {selectedClaim.dueDate}
+                                </span>
+                                {selectedClaim.isOverdue && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200 animate-pulse">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    Quá hạn
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex justify-between">
                             <span className="text-sm font-medium text-gray-700">Loại xử lý:</span>
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getProcessingTypeColor(selectedClaim.processingType)}`}>
@@ -2408,50 +2424,106 @@ const WarrantyClaims = () => {
                             {getProcessingTypeText(selectedClaimToFinalize.processingType)}
                           </span>
                         </div>
+                        {selectedClaimToFinalize.dueDate && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Hạn xử lý:</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm ${selectedClaimToFinalize.isOverdue ? 'text-red-600 font-semibold' : 'text-gray-900'}`}>
+                                {selectedClaimToFinalize.dueDate}
+                              </span>
+                              {selectedClaimToFinalize.isOverdue && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200 animate-pulse">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Quá hạn
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ghi chú nghiệm thu
-                    </label>
-                    <textarea
-                      value={finalizeNotes}
-                      onChange={(e) => setFinalizeNotes(e.target.value)}
-                      rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500"
-                      placeholder="Nhập ghi chú khi nghiệm thu yêu cầu bảo hành..."
-                      disabled={finalizeLoading}
-                    />
-                  </div>
-
-                  <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <CheckCircle className="h-5 w-5 text-cyan-400" />
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-cyan-700">
-                          Bạn có chắc chắn muốn nghiệm thu yêu cầu bảo hành này không? Hệ thống sẽ chuyển trạng thái sang "Hoàn thành" và ghi nhận thời gian hoàn thành.
-                        </p>
+                  {/* Cảnh báo quá hạn nếu có */}
+                  {selectedClaimToFinalize && selectedClaimToFinalize.isOverdue && (
+                    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <AlertCircle className="h-5 w-5 text-red-400" />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-red-700">
+                            <span className="font-semibold">Cảnh báo:</span> Yêu cầu bảo hành này đã quá hạn xử lý (hạn cuối: {selectedClaimToFinalize.dueDate}). Vui lòng xử lý ngay để đảm bảo chất lượng dịch vụ.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Chỉ hiển thị ghi chú và xác nhận nếu KHÔNG quá hạn */}
+                  {selectedClaimToFinalize && !selectedClaimToFinalize.isOverdue && (
+                    <>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ghi chú nghiệm thu
+                        </label>
+                        <textarea
+                          value={finalizeNotes}
+                          onChange={(e) => setFinalizeNotes(e.target.value)}
+                          rows={4}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500"
+                          placeholder="Nhập ghi chú khi nghiệm thu yêu cầu bảo hành..."
+                          disabled={finalizeLoading}
+                        />
+                      </div>
+
+                      <div className="bg-cyan-50 border-l-4 border-cyan-400 p-4">
+                        <div className="flex">
+                          <div className="flex-shrink-0">
+                            <CheckCircle className="h-5 w-5 text-cyan-400" />
+                          </div>
+                          <div className="ml-3">
+                            <p className="text-sm text-cyan-700">
+                              Bạn có chắc chắn muốn nghiệm thu yêu cầu bảo hành này không? Hệ thống sẽ chuyển trạng thái sang "Hoàn thành" và ghi nhận thời gian hoàn thành.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Hướng dẫn cho đơn quá hạn */}
+                  {selectedClaimToFinalize && selectedClaimToFinalize.isOverdue && (
+                    <div className="bg-orange-50 border-l-4 border-orange-400 p-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <AlertCircle className="h-5 w-5 text-orange-400" />
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm text-orange-700">
+                            <span className="font-semibold">Lưu ý:</span> Đơn đã quá hạn không thể nghiệm thu hoàn thành trực tiếp. Vui lòng giao lại công việc cho kỹ thuật viên để xử lý tiếp.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Footer buttons */}
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={handleFinalizeClaim}
-                  disabled={finalizeLoading}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-cyan-600 text-base font-medium text-white hover:bg-cyan-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  {finalizeLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  {finalizeLoading ? 'Đang xử lý...' : 'Xác nhận nghiệm thu'}
-                </button>
+                {/* Nút xác nhận nghiệm thu - chỉ hiển thị khi KHÔNG quá hạn */}
+                {selectedClaimToFinalize && !selectedClaimToFinalize.isOverdue && (
+                  <button
+                    type="button"
+                    onClick={handleFinalizeClaim}
+                    disabled={finalizeLoading}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-cyan-600 text-base font-medium text-white hover:bg-cyan-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    {finalizeLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {finalizeLoading ? 'Đang xử lý...' : 'Xác nhận nghiệm thu'}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={async () => {
