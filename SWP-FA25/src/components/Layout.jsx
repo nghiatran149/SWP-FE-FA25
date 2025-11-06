@@ -19,6 +19,7 @@ import {
   Truck,
   LogOut,
   FileText,
+  FileCog,
   Package,
   PackageX
 } from 'lucide-react';
@@ -53,6 +54,7 @@ const Layout = ({ children }) => {
     { name: 'Quản lý chiến dịch', href: '/campaign-management', icon: Megaphone, roles: ['EVM_STAFF'] },
     { name: 'Lịch sử dịch vụ', href: '/service-records', icon: FileText, roles: ['EVM_STAFF'] },
     { name: 'Kho phụ tùng', href: '/part-warehouse', icon: Package, roles: ['EVM_STAFF'] },
+    { name: 'Chính sách bảo hành', href: '/warranty-policy-management', icon: FileCog, roles: ['EVM_STAFF'] },
 
     { name: 'Quản lý kỹ thuật viên', href: '/technicians', icon: UserRoundCog, roles: ['SC_STAFF'] },
     { name: 'Quản lý khách hàng', href: '/customers', icon: Users, roles: ['SC_STAFF'] },
@@ -62,6 +64,7 @@ const Layout = ({ children }) => {
     { name: 'Quản lý chiến dịch', href: '/service-campaigns', icon: Megaphone, roles: ['SC_STAFF'] },
     { name: 'Phụ tùng có sẵn', href: '/available-parts', icon: Package, roles: ['SC_STAFF'] },
     { name: 'Phụ tùng lỗi', href: '/defective-parts', icon: PackageX, roles: ['SC_STAFF'] },
+    { name: 'Chính sách bảo hành', href: '/warranty-policy', icon: FileCog, roles: ['SC_STAFF'] },
 
     { name: 'Công việc của tôi', href: '/technician-tasks', icon: Wrench, roles: ['SC_TECHNICIAN'] },
   ];
