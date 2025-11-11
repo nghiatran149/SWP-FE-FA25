@@ -48,7 +48,10 @@ const Layout = ({ children }) => {
 
     { name: 'Dashboard', href: '/dashboard', icon: BarChart3, roles: ['ADMIN'] },
     { name: 'Báo cáo & Phân tích', href: '/reports', icon: BarChart3, roles: ['ADMIN'] },
-    { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck, roles: ['ADMIN'] },
+    // { name: 'Chuỗi cung ứng', href: '/supply-chain', icon: Truck, roles: ['ADMIN'] },
+    { name: 'Quản lý người dùng', href: '/user-management', icon: UserCheck, roles: ['ADMIN'] },
+    { name: 'Quản lý model xe', href: '/vehicle-model', icon: Car, roles: ['ADMIN'] },
+    { name: 'Quản lý model phụ tùng', href: '/part-model', icon: Package, roles: ['ADMIN'] },
 
     { name: 'Duyệt yêu cầu', href: '/warranty-approval', icon: CheckCircle, roles: ['EVM_STAFF'] },
     { name: 'Quản lý chiến dịch', href: '/campaign-management', icon: Megaphone, roles: ['EVM_STAFF'] },

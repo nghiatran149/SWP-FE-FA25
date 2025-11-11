@@ -27,6 +27,9 @@ import PartWarehouseManagement from './pages/evm/PartWarehouseManagement';
 import SupplyChain from './pages/evm/SupplyChain';
 import Reports from './pages/evm/Reports';
 import WarrantyPolicyManagement from './pages/evm/WarrantyPolicyManagement';
+import VehicleModelManagement from './pages/evm/VehicleModelManagement';
+import PartModelManagement from './pages/evm/PartModelManagement';
+import UserManagement from './pages/evm/UserManagement';
 
 function App() {
   return (
@@ -57,6 +60,21 @@ function App() {
               <Route path="/supply-chain" element={
                 <ProtectedRoute allowedRoles={['ADMIN']}>
                   <SupplyChain />
+                </ProtectedRoute>
+              } />
+              <Route path="/user-management" element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <UserManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/vehicle-model" element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <VehicleModelManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/part-model" element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <PartModelManagement />
                 </ProtectedRoute>
               } />
 
