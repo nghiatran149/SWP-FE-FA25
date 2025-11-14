@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
-import Dashboard from './pages/Dashboard';
+
 import Login from './pages/Login';
 import ForgetPassword from './pages/ForgetPassword';
 
@@ -21,11 +21,12 @@ import DefectivePartManagement from './pages/sc/DefectivePartManagement';
 import WarrantyPolicy from './pages/sc/WarrantyPolicy';
 
 // EVM (Electric Vehicle Manufacturer)
+import Dashboard from './pages/evm/Dashboard';
+import Reports from './pages/evm/Reports';
 import WarrantyApproval from './pages/evm/WarrantyApproval';
 import CampaignManagement from './pages/evm/CampaignManagement';
 import PartWarehouseManagement from './pages/evm/PartWarehouseManagement';
 import SupplyChain from './pages/evm/SupplyChain';
-import Reports from './pages/evm/Reports';
 import WarrantyPolicyManagement from './pages/evm/WarrantyPolicyManagement';
 import VehicleModelManagement from './pages/evm/VehicleModelManagement';
 import PartModelManagement from './pages/evm/PartModelManagement';
