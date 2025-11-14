@@ -1,236 +1,417 @@
-import React, { useState } from 'react';
-import { BarChart3, PieChart, TrendingUp, Download, Calendar, Filter, FileText, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileChartColumn, FileChartLine, FileCheck, Banknote, Percent, Clock8, Filter, FileText, Activity, Car, Package, AlertCircle } from 'lucide-react';
+import api from '../../api/api';
 
 const Reports = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState('this_month');
   const [selectedReport, setSelectedReport] = useState('warranty_overview');
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const reportTypes = [
-    { value: 'warranty_overview', label: 'Tổng quan bảo hành' },
-    { value: 'service_campaigns', label: 'Chiến dịch dịch vụ' },
-    { value: 'parts_inventory', label: 'Tồn kho phụ tùng' },
-    { value: 'technician_performance', label: 'Hiệu suất kỹ thuật viên' },
-    { value: 'customer_satisfaction', label: 'Hài lòng khách hàng' },
-  ];
-
-  const periods = [
-    { value: 'this_week', label: 'Tuần này' },
-    { value: 'this_month', label: 'Tháng này' },
-    { value: 'this_quarter', label: 'Quý này' },
-    { value: 'this_year', label: 'Năm này' },
-    { value: 'custom', label: 'Tùy chọn' },
-  ];
-
-  // Sample data for charts
-  const warrantyStats = {
-    totalClaims: 1234,
-    pendingClaims: 89,
-    completedClaims: 1145,
-    rejectedClaims: 23,
-    avgProcessingTime: 5.2,
-    customerSatisfaction: 4.6,
+  // Initialize with default date range (last 30 days)
+  const getDefaultDates = () => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    return {
+      startDate: thirtyDaysAgo.toISOString().split('T')[0],
+      endDate: today.toISOString().split('T')[0]
+    };
   };
 
-  const monthlyData = [
-    { month: 'T1', claims: 98, completed: 92, pending: 6 },
-    { month: 'T2', claims: 112, completed: 108, pending: 4 },
-    { month: 'T3', claims: 125, completed: 119, pending: 6 },
-    { month: 'T4', claims: 108, completed: 102, pending: 6 },
-    { month: 'T5', claims: 134, completed: 128, pending: 6 },
-    { month: 'T6', claims: 145, completed: 138, pending: 7 },
-    { month: 'T7', claims: 156, completed: 149, pending: 7 },
-    { month: 'T8', claims: 142, completed: 135, pending: 7 },
-    { month: 'T9', claims: 167, completed: 158, pending: 9 },
-  ];
+  const [startDate, setStartDate] = useState(getDefaultDates().startDate);
+  const [endDate, setEndDate] = useState(getDefaultDates().endDate);
 
-  const issueCategories = [
-    { category: 'Pin', count: 458, percentage: 37 },
-    { category: 'Động cơ', count: 295, percentage: 24 },
-    { category: 'Hệ thống sạc', count: 221, percentage: 18 },
-    { category: 'Phần mềm', count: 148, percentage: 12 },
-    { category: 'Khác', count: 112, percentage: 9 },
-  ];
+  // const reportTypes = [
+  //   { value: 'warranty_overview', label: 'Tổng quan bảo hành' },
+  //   { value: 'service_campaigns', label: 'Chiến dịch dịch vụ' },
+  //   { value: 'parts_inventory', label: 'Tồn kho phụ tùng' },
+  //   { value: 'technician_performance', label: 'Hiệu suất kỹ thuật viên' },
+  //   { value: 'customer_satisfaction', label: 'Hài lòng khách hàng' },
+  // ];
 
-  const topTechnicians = [
-    { name: 'Trần Thị B', completed: 45, avgTime: 4.2, rating: 4.8 },
-    { name: 'Phạm Văn D', completed: 42, avgTime: 4.5, rating: 4.7 },
-    { name: 'Nguyễn Văn E', completed: 38, avgTime: 4.8, rating: 4.6 },
-    { name: 'Lê Thị F', completed: 35, avgTime: 5.1, rating: 4.5 },
-    { name: 'Hoàng Văn G', completed: 33, avgTime: 5.3, rating: 4.4 },
-  ];
+  // Fetch failure statistics
+  useEffect(() => {
+    fetchFailureStatistics();
+  }, []);
+
+  const fetchFailureStatistics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/reports/failure-statistics', {
+        params: {
+          startDate,
+          endDate,
+          groupBy: 'BOTH'
+        }
+      });
+      setReportData(response.data);
+    } catch (err) {
+      console.error('Error fetching failure statistics:', err);
+      setError('Không thể tải dữ liệu báo cáo. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApplyFilter = () => {
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        setError('Ngày bắt đầu phải nhỏ hơn ngày kết thúc');
+        return;
+      }
+      fetchFailureStatistics();
+    } else {
+      setError('Vui lòng chọn ngày bắt đầu và ngày kết thúc');
+    }
+  };
 
   const getCategoryColor = (index) => {
     const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-red-500'];
     return colors[index % colors.length];
   };
 
-  const renderWarrantyOverview = () => (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <FileText className="h-6 w-6 text-blue-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Tổng yêu cầu</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{warrantyStats.totalClaims.toLocaleString()}</dd>
-                </dl>
-              </div>
-            </div>
+  const formatChangePercent = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
+  const formatCurrency = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
+  };
+
+  const renderWarrantyOverview = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Đang tải dữ liệu...</p>
           </div>
         </div>
+      );
+    }
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Activity className="h-6 w-6 text-green-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Thời gian xử lý TB</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{warrantyStats.avgProcessingTime} ngày</dd>
-                </dl>
-              </div>
-            </div>
+    if (error) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+            <p className="text-red-700">{error}</p>
           </div>
         </div>
+      );
+    }
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <TrendingUp className="h-6 w-6 text-purple-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Hài lòng KH</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">{warrantyStats.customerSatisfaction}/5</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    if (!reportData) return null;
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Monthly Trend */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Xu hướng theo tháng</h3>
-          <div className="h-64">
-            <div className="flex items-end justify-between h-48 space-x-2">
-              {monthlyData.map((data, index) => (
-                <div key={index} className="flex flex-col items-center flex-1">
-                  <div className="relative w-full">
-                    <div
-                      className="bg-blue-500 rounded-t"
-                      style={{ height: `${(data.completed / 170) * 100}%` }}
-                    ></div>
-                    <div
-                      className="bg-yellow-500"
-                      style={{ height: `${(data.pending / 170) * 100}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs text-gray-600 mt-2">{data.month}</span>
+    const { summary, byVehicleModel, byPartModel, period } = reportData;
+
+    return (
+      <div className="space-y-6">
+        {/* Period Info */}
+        {/* Moved to filter section */}
+
+        {/* Key Metrics */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Car className="h-6 w-6 text-blue-400" />
                 </div>
-              ))}
-            </div>
-            <div className="flex justify-center mt-4 space-x-4">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-                <span className="text-sm text-gray-600">Hoàn thành</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
-                <span className="text-sm text-gray-600">Đang xử lý</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Issue Categories */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Phân loại vấn đề</h3>
-          <div className="space-y-3">
-            {issueCategories.map((category, index) => (
-              <div key={category.category} className="flex items-center">
-                <div className="flex-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-900">{category.category}</span>
-                    <span className="text-gray-600">{category.count} ({category.percentage}%)</span>
-                  </div>
-                  <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${getCategoryColor(index)}`}
-                      style={{ width: `${category.percentage}%` }}
-                    ></div>
-                  </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Tổng số xe đang hoạt động</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{summary.activeVehicles.toLocaleString()}</dd>
+                  </dl>
                 </div>
               </div>
-            ))}
+            </div>
+          </div> */}
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <FileChartColumn className="h-6 w-6 text-cyan-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Số yêu cầu trong kỳ</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{summary.claimsInPeriod.toLocaleString()}</dd>
+                    {summary.claimsChangePercent !== null && (
+                      <dd className={`text-sm ${summary.claimsChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {formatChangePercent(summary.claimsChangePercent)}
+                      </dd>
+                    )}
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <FileChartLine className="h-6 w-6 text-blue-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Yêu cầu đang chờ xử lý</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{summary.pendingClaims.toLocaleString()}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <FileCheck className="h-6 w-6 text-green-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Yêu cầu hoàn thành trong kỳ</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{summary.completedClaimsInPeriod.toLocaleString()}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Banknote className="h-6 w-6 text-teal-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Tổng chi phí</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{formatCurrency(summary.totalCost)}</dd>
+                    {summary.costChangePercent !== null && (
+                      <dd className={`text-sm ${summary.costChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {formatChangePercent(summary.costChangePercent)}
+                      </dd>
+                    )}
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Percent className="h-6 w-6 text-yellow-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">TB chi phí/yêu cầu</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">{formatCurrency(summary.averageCostPerClaim)}</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Clock8 className="h-6 w-6 text-indigo-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">TB giờ sửa chữa</dt>
+                    <dd className="text-2xl font-semibold text-gray-900">
+                      {summary.averageRepairHours !== null ? `${summary.averageRepairHours}h` : 'N/A'}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Top Technicians */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Kỹ thuật viên xuất sắc</h3>
-        </div>
-        <div className="overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tên
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hoàn thành
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thời gian TB
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Đánh giá
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {topTechnicians.map((tech, index) => (
-                <tr key={tech.name}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-sm font-medium text-gray-700">{index + 1}</span>
-                      </div>
-                      <div className="text-sm font-medium text-gray-900">{tech.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tech.completed}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {tech.avgTime} ngày
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center">
-                      <span className="text-yellow-400">★</span>
-                      <span className="ml-1">{tech.rating}</span>
-                    </div>
-                  </td>
+        {/* Statistics by Model */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center">
+            <Car className="h-5 w-5 text-gray-600 mr-2" />
+            <h3 className="text-lg font-medium text-gray-900">Thống kê theo mẫu xe</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mẫu xe
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Hãng/Năm
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Xe hoạt động
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Yêu cầu BH
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tổng chi phí
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    TB chi phí/Yêu cầu
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thay đổi
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {byVehicleModel && byVehicleModel.length > 0 ? (
+                  byVehicleModel.map((model) => (
+                    <tr key={model.modelId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{model.modelName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{model.brand}</div>
+                        <div className="text-xs text-gray-500">{model.year}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {model.activeVehicles}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {model.claimsInPeriod}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(model.totalCost)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(model.averageCostPerClaim)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {model.claimsChangePercent !== null ? (
+                          <span className={model.claimsChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}>
+                            {formatChangePercent(model.claimsChangePercent)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
+                      Không có dữ liệu
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Statistics by Part */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center">
+            <Package className="h-5 w-5 text-gray-600 mr-2" />
+            <h3 className="text-lg font-medium text-gray-900">Thống kê theo phụ tùng</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Mã PT
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tên phụ tùng
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Danh mục
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Yêu cầu duy nhất
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tổng số lần
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tổng chi phí
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    TB chi phí/Yêu cầu
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thay đổi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {byPartModel && byPartModel.length > 0 ? (
+                  byPartModel.map((part) => (
+                    <tr key={part.partModelId} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{part.partNumber}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{part.partName}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          {part.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {part.uniqueClaims}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {part.totalInstances}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(part.totalCost)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(part.averageCostPerClaim)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {part.claimsChangePercent !== null ? (
+                          <span className={part.claimsChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}>
+                            {formatChangePercent(part.claimsChangePercent)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
+                      Không có dữ liệu
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -242,72 +423,69 @@ const Reports = () => {
             Thống kê và phân tích dữ liệu hệ thống
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+        {/* <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
           <Download className="h-4 w-4 mr-2" />
           Xuất báo cáo
-        </button>
+        </button> */}
       </div>
 
-      {/* Filters */}
+      {/* Filters and Period Info */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Loại báo cáo
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              value={selectedReport}
-              onChange={(e) => setSelectedReport(e.target.value)}
-            >
-              {reportTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Thời gian
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-            >
-              {periods.map((period) => (
-                <option key={period.value} value={period.value}>
-                  {period.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+          {/* Period Info */}
+          {reportData && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 lg:w-1/2">
+              <h3 className="text-sm font-medium text-blue-900">Kỳ báo cáo</h3>
+              <p className="text-sm text-blue-700 mt-1">
+                {new Date(reportData.period.startDate).toLocaleDateString('vi-VN')} - {new Date(reportData.period.endDate).toLocaleDateString('vi-VN')}
+                <span className="ml-2 text-xs">({reportData.periodLengthDays} ngày)</span>
+              </p>
+            </div>
+          )}
 
-          <div className="flex items-end">
-            <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+          {/* Date Filters */}
+          <div className="flex gap-3 lg:w-1/2 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ngày bắt đầu
+              </label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                max={endDate}
+              />
+            </div>
+
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ngày kết thúc
+              </label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            <button
+              onClick={handleApplyFilter}
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            >
               <Filter className="h-4 w-4 mr-2" />
-              Áp dụng
+              {loading ? 'Đang tải...' : 'Áp dụng'}
             </button>
           </div>
         </div>
       </div>
 
       {/* Report Content */}
-      {selectedReport === 'warranty_overview' && renderWarrantyOverview()}
-      
-      {selectedReport !== 'warranty_overview' && (
-        <div className="bg-white p-12 rounded-lg shadow text-center">
-          <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">
-            Báo cáo {reportTypes.find(t => t.value === selectedReport)?.label}
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Báo cáo này đang được phát triển và sẽ có sẵn sớm.
-          </p>
-        </div>
-      )}
+      {renderWarrantyOverview()}
     </div>
   );
 };

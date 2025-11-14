@@ -241,9 +241,9 @@ const SentToManufacturerTable = ({
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
+                      {/* <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
                         <Edit className="h-4 w-4" />
-                      </button>
+                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -421,9 +421,9 @@ const ProcessingClaimsTable = ({
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
+                      {/* <button className="p-2 text-white hover:text-white hover:bg-yellow-600 rounded-md bg-yellow-500 border border-gray-500">
                         <Edit className="h-4 w-4" />
-                      </button>
+                      </button> */}
                       {claim.claimStatus === 'APPROVED' && (
                         <button 
                           onClick={() => handleOpenAssignModal(claim)}
