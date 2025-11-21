@@ -413,7 +413,7 @@ const WarrantyApproval = () => {
   
   // State cho pagination
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   
@@ -633,6 +633,7 @@ const WarrantyApproval = () => {
             <option value={10}>10 / trang</option>
             <option value={20}>20 / trang</option>
             <option value={50}>50 / trang</option>
+            <option value={100}>100 / trang</option>
           </select>
         </div>
         <div>

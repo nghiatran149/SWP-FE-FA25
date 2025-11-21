@@ -678,6 +678,8 @@ const ServiceCampaigns = () => {
                     <option value={5}>5 / trang</option>
                     <option value={10}>10 / trang</option>
                     <option value={20}>20 / trang</option>
+                    <option value={50}>50 / trang</option>
+                    <option value={100}>100 / trang</option>
                   </select>
                 </div>
                 <div>

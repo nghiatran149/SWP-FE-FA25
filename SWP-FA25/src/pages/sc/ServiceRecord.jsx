@@ -14,7 +14,7 @@ const ServiceRecord = () => {
 
   // State cho pagination
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -156,6 +156,7 @@ const ServiceRecord = () => {
             <option value={10}>10 / trang</option>
             <option value={20}>20 / trang</option>
             <option value={50}>50 / trang</option>
+            <option value={100}>100 / trang</option>
           </select>
         </div>
         <div>
@@ -457,7 +458,7 @@ const ServiceRecord = () => {
                           {formatDate(record.serviceDate)}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          Chi phí: {record.cost?.toLocaleString() || 0} VNĐ
+                          Chi phí: $ {record.cost?.toLocaleString() || 0}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -611,7 +612,7 @@ const ServiceRecord = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-gray-700">Tổng chi phí:</span>
                           <span className="text-lg font-bold text-green-600">
-                            {selectedRecord.cost?.toLocaleString() || 0} VNĐ
+                            $ {selectedRecord.cost?.toLocaleString() || 0}
                           </span>
                         </div>
                       </div>
