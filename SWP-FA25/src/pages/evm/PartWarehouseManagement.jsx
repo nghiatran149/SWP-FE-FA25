@@ -309,9 +309,9 @@ const PartWarehouseManagement = () => {
     ];
     
     // Simple hash function
-    let hash = 0;
+    let hash = 5381;
     for (let i = 0; i < category.length; i++) {
-      hash = category.charCodeAt(i) + ((hash << 5) - hash);
+      hash = ((hash << 5) + hash) + category.charCodeAt(i); // hash * 33 + char
     }
     
     return colors[Math.abs(hash) % colors.length];
@@ -383,7 +383,7 @@ const PartWarehouseManagement = () => {
           </div>
         </div>
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        {/* <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -397,9 +397,9 @@ const PartWarehouseManagement = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        {/* <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -413,9 +413,9 @@ const PartWarehouseManagement = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
-        <div className="bg-white overflow-hidden shadow rounded-lg">
+        {/* <div className="bg-white overflow-hidden shadow rounded-lg">
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -429,7 +429,7 @@ const PartWarehouseManagement = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Filters */}
