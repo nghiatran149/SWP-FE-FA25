@@ -207,13 +207,13 @@ const TechnicianManagement = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý kỹ thuật viên</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Theo dõi hiệu suất và phân công công việc cho kỹ thuật viên
+            Theo dõi hiệu suất kỹ thuật viên
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600">
+        {/* <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-500 hover:bg-orange-600">
           <Plus className="h-4 w-4 mr-2" />
           Thêm kỹ thuật viên
-        </button>
+        </button> */}
       </div>
 
       {/* Loading State */}
