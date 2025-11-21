@@ -54,7 +54,7 @@ const CustomerManagement = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get(`/customers?page=${page}&size=${size}&sort=id,desc`);
+      const response = await api.get(`/customers?page=${page}&size=${size}&sort=updatedAt,desc`);
       console.log('API Response:', response.data);
 
       if (response.data && response.data.content) {

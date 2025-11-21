@@ -146,11 +146,11 @@ const Reports = () => {
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Số yêu cầu trong kỳ</dt>
                     <dd className="text-2xl font-semibold text-gray-900">{summary.claimsInPeriod.toLocaleString()}</dd>
-                    {summary.claimsChangePercent !== null && (
+                    {/* {summary.claimsChangePercent !== null && (
                       <dd className={`text-sm ${summary.claimsChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                         {formatChangePercent(summary.claimsChangePercent)}
                       </dd>
-                    )}
+                    )} */}
                   </dl>
                 </div>
               </div>
@@ -199,11 +199,11 @@ const Reports = () => {
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">Tổng chi phí</dt>
                     <dd className="text-2xl font-semibold text-gray-900">{formatCurrency(summary.totalCost)}</dd>
-                    {summary.costChangePercent !== null && (
+                    {/* {summary.costChangePercent !== null && (
                       <dd className={`text-sm ${summary.costChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                         {formatChangePercent(summary.costChangePercent)}
                       </dd>
-                    )}
+                    )} */}
                   </dl>
                 </div>
               </div>
@@ -273,9 +273,9 @@ const Reports = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     TB chi phí/Yêu cầu
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Thay đổi
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -301,7 +301,7 @@ const Reports = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(model.averageCostPerClaim)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {/* <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {model.claimsChangePercent !== null ? (
                           <span className={model.claimsChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}>
                             {formatChangePercent(model.claimsChangePercent)}
@@ -309,7 +309,7 @@ const Reports = () => {
                         ) : (
                           <span className="text-gray-400">N/A</span>
                         )}
-                      </td>
+                      </td> */}
                     </tr>
                   ))
                 ) : (
@@ -344,10 +344,10 @@ const Reports = () => {
                     Danh mục
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Yêu cầu duy nhất
+                    Số yêu cầu cần dùng
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tổng số lần
+                    Số PT đã dùng
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Tổng chi phí
@@ -355,9 +355,9 @@ const Reports = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     TB chi phí/Yêu cầu
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Thay đổi
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -387,7 +387,7 @@ const Reports = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(part.averageCostPerClaim)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {/* <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {part.claimsChangePercent !== null ? (
                           <span className={part.claimsChangePercent >= 0 ? 'text-red-600' : 'text-green-600'}>
                             {formatChangePercent(part.claimsChangePercent)}
@@ -395,7 +395,7 @@ const Reports = () => {
                         ) : (
                           <span className="text-gray-400">N/A</span>
                         )}
-                      </td>
+                      </td> */}
                     </tr>
                   ))
                 ) : (
